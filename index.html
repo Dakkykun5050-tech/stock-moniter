@@ -2,257 +2,668 @@
 
 <html lang="ja">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🔔 日本株 クロス検知ツール</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet"/>
-  <!-- Chart.js（ローソク足・折れ線チャート用） -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <!-- Chart.js 財務チャートアダプター -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CROSS SCANNER // 日本株</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:          #000000;
+  --bg2:         #060810;
+  --bg3:         #0a0d18;
+  --bg4:         #0d1020;
+  --neon:        #00cfff;
+  --neon2:       #0099cc;
+  --neon-dim:    rgba(0,207,255,0.10);
+  --neon-glow:   0 0 12px #00cfff, 0 0 30px rgba(0,207,255,0.4);
+  --neon-glow-s: 0 0 8px rgba(0,207,255,0.6);
+  --gold:        #ffcc00;
+  --gold-glow:   0 0 12px #ffcc00, 0 0 30px rgba(255,204,0,0.4);
+  --green:       #00ff88;
+  --green-glow:  0 0 10px rgba(0,255,136,0.5);
+  --red:         #ff3355;
+  --red-glow:    0 0 10px rgba(255,51,85,0.5);
+  --white:       #ffffff;
+  --off-white:   #ccddee;
+  --gray:        #7799aa;
+  --border:      rgba(0,207,255,0.20);
+  --border2:     rgba(0,207,255,0.08);
+  --mono:        'JetBrains Mono', monospace;
+  --sans:        'Noto Sans JP', sans-serif;
+  --r:           8px;
+}
 
-  <style>
-    :root {
-      --bg-base:       #0a0e17;
-      --bg-panel:      #0f1623;
-      --bg-card:       #141c2e;
-      --bg-card-hover: #1a2540;
-      --bg-input:      #0c1220;
-      --border:        #1e2d4a;
-      --accent-gold:   #f0b429;
-      --accent-green:  #00e5a0;
-      --accent-red:    #ff4d6d;
-      --accent-blue:   #4d9eff;
-      --accent-orange: #ff8c42;
-      --text-primary:  #e8f0ff;
-      --text-secondary:#6a85b0;
-      --text-mono:     #a0c0ff;
-      --glow-gold:     0 0 24px rgba(240,180,41,0.5);
-      --glow-green:    0 0 24px rgba(0,229,160,0.4);
-      --glow-red:      0 0 24px rgba(255,77,109,0.4);
-      --radius:        12px;
-      --tr:            0.25s ease;
-    }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    input,button{-webkit-appearance:none;appearance:none}
-    input[type="text"]{border-radius:8px}
-    body{
-      font-family:'Noto Sans JP',sans-serif;
-      background:var(--bg-base);color:var(--text-primary);min-height:100vh;
-      background-image:
-        linear-gradient(rgba(77,158,255,0.03) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(77,158,255,0.03) 1px,transparent 1px);
-      background-size:40px 40px;
-    }
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+input, button { -webkit-appearance:none; appearance:none; }
 
-    /* ── ヘッダー ── */
-    header{
-      background:linear-gradient(135deg,#0f1623,#0a1428);
-      border-bottom:1px solid var(--border);padding:12px 18px;
-      position:sticky;top:0;z-index:200;
-      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    }
-    .hdr{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-    .logo{display:flex;align-items:center;gap:8px}
-    .logo-icon{font-size:20px;animation:pulse 2s infinite}
-    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
-    .logo-text{font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--accent-gold);letter-spacing:2px;text-shadow:var(--glow-gold)}
-    .logo-sub{font-size:10px;color:var(--text-secondary);letter-spacing:1px}
-    .hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .timer-badge{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-secondary);background:var(--bg-input);border:1px solid var(--border);padding:5px 11px;border-radius:20px}
-    .timer-badge span{color:var(--accent-blue);font-weight:bold}
+body {
+font-family: var(–sans);
+background: var(–bg);
+color: var(–white);
+min-height: 100vh;
+overflow-x: hidden;
+}
 
-    /* ── ボタン ── */
-    .btn{font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;transition:all var(--tr);display:inline-flex;align-items:center;gap:5px}
-    .btn-blue{background:linear-gradient(135deg,#1a4fd6,#0e3aac);color:#fff;border:1px solid #2a5fe0;box-shadow:0 0 10px rgba(26,79,214,0.4)}
-    .btn-blue:hover{background:linear-gradient(135deg,#2a5fe0,#1a4fd6);transform:translateY(-1px)}
-    .btn-green{background:linear-gradient(135deg,#00a070,#007050);color:#fff;border:1px solid #00c088}
-    .btn-green:hover{background:linear-gradient(135deg,#00c090,#00a070);transform:translateY(-1px)}
-    .btn-red{background:rgba(255,77,109,0.15);color:var(--accent-red);border:1px solid rgba(255,77,109,0.4)}
-    .btn-red:hover{background:rgba(255,77,109,0.25)}
-    .btn-gold{background:linear-gradient(135deg,#b8860b,#8b6508);color:#fff;border:1px solid var(--accent-gold);box-shadow:0 0 10px rgba(240,180,41,0.3)}
-    .btn-gold:hover{background:linear-gradient(135deg,#d4a017,#b8860b);box-shadow:var(--glow-gold);transform:translateY(-1px)}
-    .btn:disabled{opacity:0.45;cursor:not-allowed;transform:none!important}
+/* 背景グリッド（薄い青） */
+body::before {
+content:’’;
+position:fixed; inset:0; z-index:0; pointer-events:none;
+background-image:
+linear-gradient(rgba(0,207,255,0.04) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0,207,255,0.04) 1px, transparent 1px);
+background-size: 40px 40px;
+}
 
-    /* ── メイン ── */
-    main{max-width:1280px;margin:0 auto;padding:20px 14px}
+/* ============ HEADER ============ */
+header {
+position: sticky; top:0; z-index:500;
+background: rgba(0,0,0,0.96);
+border-bottom: 1px solid var(–border);
+padding: 0 20px;
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
+}
+.hdr {
+max-width:1400px; margin:0 auto;
+display:flex; align-items:center; justify-content:space-between;
+gap:12px; flex-wrap:wrap; min-height:62px;
+}
 
-    /* ── パネル共通 ── */
-    .panel{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;position:relative;overflow:hidden}
-    .panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-    .panel.blue::before{background:linear-gradient(90deg,transparent,var(--accent-blue),transparent)}
-    .panel.gold::before{background:linear-gradient(90deg,transparent,var(--accent-gold),transparent)}
-    .panel.green::before{background:linear-gradient(90deg,transparent,var(--accent-green),transparent)}
-    .panel-title{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+/* ロゴ */
+.logo { display:flex; align-items:center; gap:12px; }
+.logo-box {
+width:42px; height:42px;
+border: 1.5px solid var(–neon);
+border-radius:6px;
+display:flex; align-items:center; justify-content:center;
+font-size:20px;
+box-shadow: var(–neon-glow);
+animation: box-pulse 3s ease-in-out infinite;
+}
+@keyframes box-pulse {
+0%,100%{ box-shadow: var(–neon-glow-s); }
+50%    { box-shadow: var(–neon-glow); }
+}
+.logo-title {
+font-family: var(–mono); font-size:17px; font-weight:800;
+color: var(–neon); letter-spacing:3px;
+text-shadow: var(–neon-glow);
+}
+.logo-sub {
+font-family: var(–mono); font-size:10px;
+color: var(–gray); letter-spacing:2px; margin-top:3px;
+}
 
-    /* ── 銘柄追加 ── */
-    .add-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
-    .input-wrap{flex:1;min-width:140px;max-width:220px}
-    .input-wrap label{display:block;font-size:10px;color:var(--text-secondary);margin-bottom:4px;letter-spacing:1px}
-    .stock-input{width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-family:'Share Tech Mono',monospace;font-size:17px;padding:9px 12px;border-radius:8px;outline:none;transition:border-color var(--tr),box-shadow var(--tr);letter-spacing:4px}
-    .stock-input:focus{border-color:var(--accent-blue);box-shadow:0 0 10px rgba(77,158,255,0.3)}
-    .stock-input::placeholder{color:var(--text-secondary);letter-spacing:1px;font-size:13px}
-    .presets{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
-    .preset-btn{font-family:'Share Tech Mono',monospace;font-size:10px;background:var(--bg-input);border:1px solid var(--border);color:var(--text-secondary);padding:3px 9px;border-radius:5px;cursor:pointer;transition:all var(--tr)}
-    .preset-btn:hover{border-color:var(--accent-blue);color:var(--accent-blue)}
+/* ヘッダー右 */
+.hdr-right { display:flex; align-items:center; gap:10px; }
+.timer {
+font-family:var(–mono); font-size:13px; font-weight:700;
+background: var(–bg3);
+border: 1px solid var(–border);
+padding: 7px 14px; border-radius:6px;
+color: var(–gray);
+display:flex; align-items:center; gap:8px;
+}
+.timer-dot {
+width:7px; height:7px; border-radius:50%;
+background: var(–neon);
+box-shadow: var(–neon-glow-s);
+animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.timer span { color:var(–neon); font-weight:800; font-size:15px; }
 
-    /* ── ★ 自動銘柄選定パネル ── */
-    .screen-desc{font-size:11px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px}
-    .screen-desc strong{color:var(--accent-gold)}
-    .screen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px}
-    .screen-option{background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all var(--tr)}
-    .screen-option:hover,.screen-option.active{border-color:var(--accent-gold);background:rgba(240,180,41,0.07)}
-    .screen-option input[type=checkbox]{accent-color:var(--accent-gold);margin-right:6px;width:14px;height:14px;cursor:pointer}
-    .screen-option label{font-size:12px;color:var(--text-primary);cursor:pointer;user-select:none}
-    .screen-option .opt-desc{font-size:10px;color:var(--text-secondary);margin-top:3px;padding-left:20px}
-    .screen-results{margin-top:12px}
-    .screen-result-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-    .screen-tag{font-family:'Share Tech Mono',monospace;font-size:11px;background:rgba(240,180,41,0.12);border:1px solid rgba(240,180,41,0.4);color:var(--accent-gold);padding:4px 10px;border-radius:5px;cursor:pointer;transition:all var(--tr);display:flex;align-items:center;gap:5px}
-    .screen-tag:hover{background:rgba(240,180,41,0.2);transform:translateY(-1px)}
-    .screen-tag .tag-add{font-size:14px;line-height:1}
-    .screen-status{font-size:11px;color:var(--text-secondary);margin-top:6px}
+/* ============ ボタン ============ */
+.btn {
+font-family: var(–mono); font-size:12px; font-weight:700;
+border-radius:6px; padding:8px 16px; cursor:pointer;
+transition:all 0.2s ease;
+display:inline-flex; align-items:center; gap:6px;
+letter-spacing:1px; border:none;
+}
+.btn-neon {
+background: transparent; color: var(–neon);
+border: 1.5px solid var(–neon);
+}
+.btn-neon:hover {
+background: var(–neon-dim);
+box-shadow: var(–neon-glow);
+transform: translateY(-1px);
+}
+.btn-gold {
+background: transparent; color: var(–gold);
+border: 1.5px solid var(–gold);
+}
+.btn-gold:hover {
+background: rgba(255,204,0,0.10);
+box-shadow: var(–gold-glow);
+transform: translateY(-1px);
+}
+.btn-gray {
+background: transparent; color: var(–off-white);
+border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-gray:hover { border-color: var(–off-white); }
+.btn-del {
+background: transparent; color: var(–red);
+border: 1px solid rgba(255,51,85,0.4);
+padding:5px 10px; font-size:11px;
+}
+.btn-del:hover { background: rgba(255,51,85,0.10); box-shadow: var(–red-glow); }
+.btn:disabled { opacity:0.35; cursor:not-allowed; transform:none !important; }
 
-    /* シグナルレジェンド */
-    .legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
-    .legend-item{display:flex;align-items:flex-start;gap:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:9px 11px}
-    .legend-item.strong{border-color:rgba(240,180,41,0.4);background:rgba(240,180,41,0.05)}
-    .legend-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;white-space:nowrap;flex-shrink:0}
-    .legend-desc{font-size:10px;color:var(--text-secondary);line-height:1.6}
-    .legend-desc strong{color:var(--text-primary)}
+/* ============ MAIN ============ */
+main {
+max-width:1400px; margin:0 auto;
+padding:24px 16px;
+position:relative; z-index:1;
+}
 
-    /* LINE */
-    .webhook-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .webhook-input{flex:1;min-width:180px;background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-family:'Share Tech Mono',monospace;font-size:11px;padding:8px 11px;border-radius:7px;outline:none}
-    .webhook-input:focus{border-color:#06c755}
-    .btn-line{background:linear-gradient(135deg,#06c755,#059a44);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:all var(--tr);display:inline-flex;align-items:center;gap:5px}
-    .btn-line:hover{transform:translateY(-1px);box-shadow:0 0 14px rgba(6,199,85,0.4)}
+/* ============ パネル ============ */
+.panel {
+background: var(–bg2);
+border: 1px solid var(–border2);
+border-radius: var(–r);
+margin-bottom:18px;
+overflow:hidden;
+}
+.panel-head {
+display:flex; align-items:center; justify-content:space-between;
+padding:13px 20px;
+border-bottom: 1px solid var(–border2);
+}
+.panel-title {
+font-family: var(–mono); font-size:11px; font-weight:800;
+letter-spacing:3px; text-transform:uppercase;
+display:flex; align-items:center; gap:8px;
+}
+.panel-title.neon  { color: var(–neon);  }
+.panel-title.gold  { color: var(–gold);  }
+.panel-title.green { color: var(–green); }
+.panel-title::before {
+content:’’; width:7px; height:7px; border-radius:50%;
+background:currentColor; box-shadow:0 0 8px currentColor;
+}
+.panel-body { padding:18px 20px; }
 
-    /* 監視リスト */
-    .watch-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
-    .watch-title{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-secondary);letter-spacing:2px}
-    .watch-count{background:var(--bg-input);border:1px solid var(--border);color:var(--accent-blue);font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 9px;border-radius:10px}
-    .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+/* ============ 銘柄追加 ============ */
+.add-form { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.inp-group { display:flex; flex-direction:column; gap:5px; flex:1; min-width:150px; max-width:230px; }
+.inp-label {
+font-family:var(–mono); font-size:10px; font-weight:700;
+color: var(–off-white); letter-spacing:2px; text-transform:uppercase;
+}
+.code-input {
+background: var(–bg4);
+border: 1.5px solid rgba(0,207,255,0.25);
+color: var(–neon);
+font-family:var(–mono); font-size:24px; font-weight:800;
+padding:10px 14px; border-radius:6px;
+outline:none; width:100%;
+letter-spacing:6px;
+caret-color: var(–neon);
+transition: border-color 0.2s, box-shadow 0.2s;
+}
+.code-input:focus {
+border-color: var(–neon);
+box-shadow: var(–neon-glow-s);
+}
+.code-input::placeholder {
+color: rgba(0,207,255,0.25); font-size:16px; letter-spacing:2px;
+}
 
-    /* ── 銘柄カード ── */
-    .stock-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;transition:border-color var(--tr),box-shadow var(--tr),transform var(--tr);animation:fadeIn 0.4s ease}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-    .stock-card:hover{background:var(--bg-card-hover);transform:translateY(-2px)}
-    .stock-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--border);transition:background var(--tr)}
-    .stock-card.gc::before{background:linear-gradient(90deg,var(--accent-green),#00ffaa)}
-    .stock-card.gc{border-color:rgba(0,229,160,0.3);box-shadow:var(--glow-green)}
-    .stock-card.strong-gc::before{background:linear-gradient(90deg,var(--accent-gold),#ffe066,var(--accent-orange),var(--accent-gold));background-size:200% auto;animation:shimmer 2.5s linear infinite}
-    @keyframes shimmer{0%{background-position:0% center}100%{background-position:200% center}}
-    .stock-card.strong-gc{border-color:rgba(240,180,41,0.55);box-shadow:var(--glow-gold),0 0 40px rgba(240,180,41,0.15)}
-    .stock-card.dc::before{background:linear-gradient(90deg,var(--accent-red),#ff9999)}
-    .stock-card.dc{border-color:rgba(255,77,109,0.35);box-shadow:var(--glow-red)}
-    .stock-card.up::before{background:linear-gradient(90deg,#1a3d6a,#2a5fee)}
-    .stock-card.down::before{background:linear-gradient(90deg,#2a0e1a,#7a1a3a)}
+.presets { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+.pre-lbl { font-family:var(–mono); font-size:10px; color:var(–gray); align-self:center; letter-spacing:1px; }
+.preset {
+font-family:var(–mono); font-size:11px; font-weight:700;
+background:transparent; border:1px solid rgba(0,207,255,0.18);
+color: var(–off-white); padding:5px 11px; border-radius:5px;
+cursor:pointer; transition:all 0.2s; letter-spacing:1px;
+}
+.preset:hover {
+border-color:var(–neon); color:var(–neon);
+box-shadow: 0 0 6px rgba(0,207,255,0.3);
+}
 
-    .card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:6px}
-    .card-code{font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--text-primary);letter-spacing:3px;line-height:1.1}
-    .card-name{font-size:10px;color:var(--text-secondary);margin-top:2px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .card-actions{display:flex;gap:5px;align-items:center}
+/* ============ スクリーナー ============ */
+.screen-desc {
+font-size:13px; color:var(–off-white);
+line-height:1.9; margin-bottom:16px;
+}
+.screen-desc strong { color:var(–gold); }
 
-    /* シグナルバッジ */
-    .sig{font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;white-space:nowrap;display:flex;align-items:center;gap:3px}
-    .sig-gc{background:rgba(0,229,160,0.15);color:var(--accent-green);border:1px solid rgba(0,229,160,0.4)}
-    .sig-sgc{background:linear-gradient(135deg,rgba(240,180,41,0.2),rgba(255,140,66,0.15));color:var(--accent-gold);border:1px solid rgba(240,180,41,0.65);box-shadow:var(--glow-gold);animation:sigpulse 1.6s ease-in-out infinite}
-    @keyframes sigpulse{0%,100%{box-shadow:0 0 6px rgba(240,180,41,0.4)}50%{box-shadow:0 0 20px rgba(240,180,41,0.75)}}
-    .sig-dc{background:rgba(255,77,109,0.15);color:var(--accent-red);border:1px solid rgba(255,77,109,0.4)}
-    .sig-up{background:rgba(77,158,255,0.12);color:var(--accent-blue);border:1px solid rgba(77,158,255,0.3)}
-    .sig-down{background:rgba(106,133,176,0.1);color:var(--text-secondary);border:1px solid var(--border)}
-    .sig-load{background:rgba(77,158,255,0.08);color:var(--text-secondary);border:1px solid var(--border)}
-    .sig-err{background:rgba(255,77,109,0.1);color:var(--accent-red);border:1px solid rgba(255,77,109,0.3)}
+.sub-lbl {
+font-family:var(–mono); font-size:10px; font-weight:700;
+color:var(–gray); letter-spacing:3px; margin-bottom:9px;
+text-transform:uppercase;
+}
 
-    /* 株価行 */
-    .price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
-    .price-main{font-family:'Share Tech Mono',monospace;font-size:28px;color:var(--text-primary);letter-spacing:1px}
-    .price-change{font-family:'Share Tech Mono',monospace;font-size:13px}
-    .pos{color:var(--accent-green)}.neg{color:var(--accent-red)}.neu{color:var(--text-secondary)}
+/* セクターボタン */
+.sector-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.sec-btn {
+font-family:var(–mono); font-size:11px; font-weight:700;
+background:transparent; border:1px solid rgba(255,255,255,0.12);
+color: var(–off-white); padding:6px 13px; border-radius:5px;
+cursor:pointer; transition:all 0.2s; letter-spacing:0.5px; white-space:nowrap;
+}
+.sec-btn:hover { border-color:var(–gold); color:var(–gold); }
+.sec-btn.active {
+background: rgba(255,204,0,0.10);
+border-color:var(–gold); color:var(–gold);
+box-shadow: 0 0 8px rgba(255,204,0,0.3);
+}
 
-    /* 指標グリッド */
-    .metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
-    .mc{background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 11px}
-    .ml{font-size:9px;color:var(--text-secondary);letter-spacing:1px;margin-bottom:3px;text-transform:uppercase}
-    .mv{font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--text-mono)}
+/* 条件グリッド */
+.cond-grid {
+display:grid;
+grid-template-columns:repeat(auto-fill, minmax(200px,1fr));
+gap:8px; margin-bottom:16px;
+}
+.cond-item {
+background:var(–bg4); border:1px solid rgba(255,255,255,0.08);
+border-radius:6px; padding:11px 14px;
+cursor:pointer; transition:all 0.2s;
+}
+.cond-item:hover, .cond-item.active {
+border-color:rgba(255,204,0,0.5);
+background:rgba(255,204,0,0.05);
+}
+.cond-item input[type=checkbox] {
+accent-color:var(–gold); margin-right:7px;
+width:15px; height:15px; cursor:pointer; vertical-align:middle;
+}
+.cond-item label {
+font-size:13px; font-weight:700;
+color:var(–white); cursor:pointer; user-select:none;
+}
+.cond-sub {
+font-size:11px; color:var(–gray);
+margin-top:5px; padding-left:22px; line-height:1.5;
+}
 
-    /* RSIバー */
-    .rsi-wrap{grid-column:1/-1;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 11px}
-    .rsi-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-    .rsi-lbl{font-size:9px;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase}
-    .rsi-val{font-family:'Share Tech Mono',monospace;font-size:14px}
-    .rsi-track{height:6px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;position:relative}
-    .rsi-fill{height:100%;border-radius:3px;transition:width 0.6s ease,background 0.4s ease}
-    .rsi-track::after{content:'';position:absolute;top:-1px;bottom:-1px;left:50%;width:2px;margin-left:-1px;background:var(--accent-gold);opacity:0.7}
-    .rsi-hint{font-size:9px;color:var(--text-secondary);margin-top:4px;display:flex;justify-content:space-between}
-    .rsi-hint .thr{color:var(--accent-gold);font-weight:700}
+.scan-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.scan-count { font-family:var(–mono); font-size:11px; color:var(–gray); letter-spacing:1px; }
 
-    /* 出来高 */
-    .vol-wrap{grid-column:1/-1;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:8px 11px}
-    .vol-hdr{display:flex;justify-content:space-between;align-items:center}
-    .vol-lbl{font-size:9px;color:var(--text-secondary);letter-spacing:1px;text-transform:uppercase}
-    .vol-val{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent-blue)}
+.prog { height:3px; background:var(–bg4); border-radius:2px; margin-top:12px; overflow:hidden; display:none; }
+.prog-fill {
+height:100%;
+background:linear-gradient(90deg, var(–gold), #ff9900);
+border-radius:2px; transition:width 0.3s ease; width:0%;
+box-shadow: 0 0 8px rgba(255,204,0,0.6);
+}
+.scan-status { font-family:var(–mono); font-size:11px; color:var(–gray); margin-top:8px; letter-spacing:1px; }
 
-    /* ── ★ チャートエリア ── */
-    .chart-toggle{width:100%;background:rgba(77,158,255,0.08);border:1px solid rgba(77,158,255,0.2);color:var(--accent-blue);border-radius:7px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;margin-bottom:0;transition:all var(--tr);display:flex;align-items:center;justify-content:center;gap:5px}
-    .chart-toggle:hover{background:rgba(77,158,255,0.15)}
-    .chart-area{display:none;margin-top:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:10px;position:relative}
-    .chart-area.open{display:block}
-    .chart-area canvas{width:100%!important;max-height:200px}
+.result-list { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.result-tag {
+font-family:var(–mono); font-size:11px; font-weight:700;
+background: rgba(255,204,0,0.07);
+border: 1px solid rgba(255,204,0,0.40);
+color:var(–gold); padding:5px 12px; border-radius:5px;
+cursor:pointer; transition:all 0.2s;
+display:flex; align-items:center; gap:7px;
+}
+.result-tag:hover {
+background:rgba(255,204,0,0.15); transform:translateY(-1px);
+box-shadow:0 0 8px rgba(255,204,0,0.3);
+}
 
-    /* カードフッター */
-    .card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
-    .card-updated{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-secondary)}
+/* ============ レジェンド ============ */
+.legend-grid {
+display:grid;
+grid-template-columns:repeat(auto-fill, minmax(210px,1fr));
+gap:8px;
+}
+.leg-row {
+display:flex; align-items:flex-start; gap:10px;
+background:var(–bg4); border:1px solid rgba(255,255,255,0.07);
+border-radius:6px; padding:11px 13px;
+}
+.leg-row.hl { border-color:rgba(255,204,0,0.30); background:rgba(255,204,0,0.04); }
+.leg-badge {
+font-family:var(–mono); font-size:10px; font-weight:800;
+padding:4px 9px; border-radius:4px; white-space:nowrap;
+flex-shrink:0; letter-spacing:0.5px;
+}
+.leg-text { font-size:12px; color:var(–off-white); line-height:1.7; }
+.leg-text strong { color:var(–white); font-weight:700; }
 
-    /* アラートバナー */
-    .alert-banner{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1c1500,#2a1e00);border:2px solid var(--accent-gold);border-radius:14px;padding:14px 20px;z-index:9999;box-shadow:var(--glow-gold),0 8px 32px rgba(0,0,0,0.6);max-width:92vw;min-width:280px;animation:slideUp 0.4s ease}
-    @keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-    .alert-banner.active{display:flex;align-items:center;gap:12px}
-    .alert-icon{font-size:26px;animation:pulse 1s infinite}
-    .alert-title{font-size:13px;font-weight:700;color:var(--accent-gold);margin-bottom:2px}
-    .alert-body{font-size:11px;color:var(--text-secondary)}
-    .alert-close{margin-left:auto;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;padding:3px;line-height:1;transition:color var(--tr)}
-    .alert-close:hover{color:var(--text-primary)}
+/* LINE */
+.line-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.line-inp {
+flex:1; min-width:200px;
+background:var(–bg4); border:1px solid rgba(255,255,255,0.12);
+color:var(–white); font-family:var(–mono); font-size:12px;
+padding:9px 13px; border-radius:6px; outline:none;
+transition:border-color 0.2s;
+}
+.line-inp:focus { border-color:#06c755; }
+.btn-line {
+background:transparent; color:#06c755;
+border:1.5px solid #06c755;
+border-radius:6px; padding:9px 16px;
+font-family:var(–mono); font-size:12px; font-weight:700;
+cursor:pointer; transition:all 0.2s; letter-spacing:1px;
+}
+.btn-line:hover { background:rgba(6,199,85,0.10); box-shadow:0 0 10px rgba(6,199,85,0.4); }
 
-    /* 空状態 */
-    .empty{text-align:center;padding:50px 20px;color:var(--text-secondary)}
-    .empty-icon{font-size:44px;margin-bottom:14px;opacity:0.5}
-    .empty-text{font-size:13px;line-height:1.9}
+/* ============ 監視リスト ============ */
+.watch-hdr {
+display:flex; align-items:center; justify-content:space-between;
+margin-bottom:16px;
+}
+.watch-title {
+font-family:var(–mono); font-size:12px; font-weight:800;
+color:var(–neon); letter-spacing:4px; text-transform:uppercase;
+display:flex; align-items:center; gap:9px;
+text-shadow: var(–neon-glow-s);
+}
+.watch-title::before {
+content:’’; width:7px; height:7px; border-radius:50%;
+background:var(–neon); box-shadow:var(–neon-glow-s);
+}
+.watch-badge {
+font-family:var(–mono); font-size:11px; font-weight:700;
+background:var(–neon-dim); border:1px solid var(–neon);
+color:var(–neon); padding:4px 12px; border-radius:4px;
+box-shadow:var(–neon-glow-s);
+}
 
-    /* スピナー */
-    .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent-blue);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle}
-    @keyframes spin{to{transform:rotate(360deg)}}
+.cards-grid {
+display:grid;
+grid-template-columns:repeat(auto-fill, minmax(340px,1fr));
+gap:14px;
+}
 
-    /* スクリーナー進捗バー */
-    .screen-progress{height:3px;background:var(--bg-input);border-radius:2px;margin-top:8px;overflow:hidden;display:none}
-    .screen-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent-gold),var(--accent-orange));border-radius:2px;transition:width 0.3s ease;width:0%}
+/* ============ 銘柄カード ============ */
+.card {
+background: var(–bg2);
+border: 1px solid rgba(0,207,255,0.12);
+border-radius:var(–r);
+overflow:hidden;
+transition:border-color 0.25s, box-shadow 0.25s, transform 0.2s;
+animation:cardIn 0.4s ease;
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+.card:hover { transform:translateY(-3px); }
 
-    @media(max-width:480px){
-      .cards-grid{grid-template-columns:1fr}
-      .price-main{font-size:24px}
-      .card-code{font-size:18px}
-      .legend-grid{grid-template-columns:1fr}
-      .screen-grid{grid-template-columns:1fr}
-    }
-  </style>
+/* シグナル別 */
+.card.strong-gc {
+border-color:rgba(255,204,0,0.55);
+box-shadow:0 0 24px rgba(255,204,0,0.15);
+}
+.card.gc   { border-color:rgba(0,255,136,0.35); box-shadow:0 0 16px rgba(0,255,136,0.10); }
+.card.dc   { border-color:rgba(255,51,85,0.35);  box-shadow:0 0 16px rgba(255,51,85,0.10); }
+.card.up   { border-color:rgba(0,207,255,0.30); }
+.card.down { border-color:rgba(0,207,255,0.10); }
+
+/* 上部ライン */
+.card-bar { height:2.5px; width:100%; }
+.card.strong-gc .card-bar {
+background:linear-gradient(90deg,transparent,var(–gold),#ffe066,var(–gold),transparent);
+background-size:200% auto;
+animation:bar-move 2.5s linear infinite;
+}
+@keyframes bar-move { 0%{background-position:0%} 100%{background-position:200%} }
+.card.gc   .card-bar { background:linear-gradient(90deg,transparent,var(–green),transparent); }
+.card.dc   .card-bar { background:linear-gradient(90deg,transparent,var(–red),transparent); }
+.card.up   .card-bar { background:linear-gradient(90deg,transparent,var(–neon),transparent); }
+.card.down .card-bar { background:rgba(0,207,255,0.10); }
+
+.card-body { padding:16px; }
+
+/* カードヘッダー */
+.card-hdr {
+display:flex; align-items:flex-start;
+justify-content:space-between; margin-bottom:14px; gap:8px;
+}
+.card-code {
+font-family:var(–mono); font-size:26px; font-weight:800;
+color:var(–white); letter-spacing:5px; line-height:1;
+}
+.card-name {
+font-size:11px; color:var(–gray); margin-top:4px;
+max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+font-family:var(–mono); letter-spacing:0.5px;
+}
+.card-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+
+/* バッジ */
+.badge {
+font-family:var(–mono); font-size:10px; font-weight:800;
+padding:4px 10px; border-radius:4px; white-space:nowrap;
+letter-spacing:0.5px;
+}
+.b-sgc {
+color:var(–gold); border:1.5px solid var(–gold);
+background:rgba(255,204,0,0.10);
+animation:gold-pulse 1.6s ease-in-out infinite;
+}
+@keyframes gold-pulse {
+0%,100%{ box-shadow:0 0 6px rgba(255,204,0,0.3); }
+50%    { box-shadow:0 0 18px rgba(255,204,0,0.7); }
+}
+.b-gc   { color:var(–green); border:1px solid rgba(0,255,136,0.5); background:rgba(0,255,136,0.07); }
+.b-dc   { color:var(–red);   border:1px solid rgba(255,51,85,0.5);  background:rgba(255,51,85,0.07); }
+.b-up   { color:var(–neon);  border:1px solid rgba(0,207,255,0.4);  background:rgba(0,207,255,0.07); }
+.b-down { color:var(–gray);  border:1px solid rgba(255,255,255,0.12); background:transparent; }
+.b-load { color:var(–gray);  border:1px solid rgba(255,255,255,0.12); background:transparent; }
+.b-err  { color:var(–red);   border:1px solid rgba(255,51,85,0.4);   background:transparent; }
+
+/* 株価 */
+.price-row { display:flex; align-items:baseline; gap:12px; margin-bottom:14px; }
+.price-main {
+font-family:var(–mono); font-size:34px; font-weight:800;
+color:var(–white); letter-spacing:1px; line-height:1;
+}
+.price-chg { font-family:var(–mono); font-size:14px; font-weight:700; }
+.c-up  { color:var(–green); }
+.c-dn  { color:var(–red);   }
+.c-neu { color:var(–gray);  }
+
+/* 区切り */
+.div { height:1px; background:rgba(0,207,255,0.08); margin:0 0 14px; }
+
+/* 指標グリッド */
+.metrics { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:10px; }
+.mc {
+background:var(–bg4); border:1px solid rgba(0,207,255,0.08);
+border-radius:6px; padding:10px 12px;
+}
+.ml {
+font-family:var(–mono); font-size:9px; font-weight:700;
+color:var(–gray); letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;
+}
+.mv {
+font-family:var(–mono); font-size:16px; font-weight:700;
+color:var(–white);
+}
+
+/* RSI */
+.rsi-box {
+grid-column:1/-1;
+background:var(–bg4); border:1px solid rgba(0,207,255,0.08);
+border-radius:6px; padding:10px 12px;
+}
+.rsi-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.rsi-lbl {
+font-family:var(–mono); font-size:9px; font-weight:700;
+color:var(–gray); letter-spacing:2px; text-transform:uppercase;
+}
+.rsi-num { font-family:var(–mono); font-size:16px; font-weight:800; }
+.rsi-track {
+height:6px; background:rgba(255,255,255,0.05);
+border-radius:3px; overflow:hidden; position:relative;
+}
+.rsi-fill { height:100%; border-radius:3px; transition:width 0.7s ease, background 0.4s ease; }
+.rsi-track::after {
+content:’’; position:absolute; top:-2px; bottom:-2px;
+left:50%; width:2px; margin-left:-1px;
+background:var(–gold); opacity:0.7;
+}
+.rsi-hints {
+display:flex; justify-content:space-between;
+margin-top:6px; font-family:var(–mono); font-size:9px; color:var(–gray);
+}
+.rsi-hints .hl { color:var(–gold); font-weight:800; }
+
+/* 出来高 */
+.vol-box {
+grid-column:1/-1;
+background:var(–bg4); border:1px solid rgba(0,207,255,0.08);
+border-radius:6px; padding:10px 12px;
+display:flex; align-items:center; justify-content:space-between;
+}
+.vol-lbl {
+font-family:var(–mono); font-size:9px; font-weight:700;
+color:var(–gray); letter-spacing:2px; text-transform:uppercase;
+}
+.vol-val { font-family:var(–mono); font-size:15px; font-weight:700; color:var(–neon); }
+
+/* チャートボタン */
+.chart-btn {
+width:100%; margin-top:12px;
+background:transparent; border:1px solid rgba(0,207,255,0.18);
+color:var(–neon); border-radius:6px; padding:8px;
+font-family:var(–mono); font-size:10px; font-weight:700;
+cursor:pointer; transition:all 0.2s;
+display:flex; align-items:center; justify-content:center; gap:7px;
+letter-spacing:2px;
+}
+.chart-btn:hover { background:var(–neon-dim); box-shadow:var(–neon-glow-s); }
+.chart-area {
+display:none; margin-top:10px;
+background:var(–bg4); border:1px solid rgba(0,207,255,0.08);
+border-radius:6px; padding:12px;
+}
+.chart-area.open { display:block; }
+.chart-area canvas { width:100%!important; }
+
+/* カードフッター */
+.card-foot {
+display:flex; justify-content:space-between; align-items:center;
+margin-top:12px; padding-top:12px;
+border-top:1px solid rgba(0,207,255,0.08);
+}
+.foot-time { font-family:var(–mono); font-size:10px; color:var(–gray); letter-spacing:0.5px; }
+
+/* ============ アラート ============ */
+.alert {
+display:none;
+position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+background:var(–bg2); border:1.5px solid var(–gold);
+border-radius:10px; padding:16px 20px; z-index:9999;
+box-shadow:var(–gold-glow), 0 8px 32px rgba(0,0,0,0.7);
+max-width:92vw; min-width:300px;
+animation:alertIn 0.4s ease;
+}
+@keyframes alertIn {
+from{opacity:0;transform:translateX(-50%) translateY(20px)}
+to  {opacity:1;transform:translateX(-50%) translateY(0)}
+}
+.alert.on { display:flex; align-items:center; gap:14px; }
+.alert-icon { font-size:26px; }
+.alert-title {
+font-family:var(–mono); font-size:13px; font-weight:800;
+color:var(–gold); letter-spacing:1px; margin-bottom:4px;
+}
+.alert-body { font-size:12px; color:var(–off-white); line-height:1.6; }
+.alert-x {
+margin-left:auto; background:none; border:none;
+color:var(–gray); cursor:pointer; font-size:18px;
+line-height:1; padding:4px; transition:color 0.2s;
+}
+.alert-x:hover { color:var(–white); }
+
+/* 空状態 */
+.empty {
+text-align:center; padding:70px 20px;
+color:var(–gray); grid-column:1/-1;
+}
+.empty-icon { font-size:48px; margin-bottom:16px; opacity:0.3; }
+.empty-text {
+font-family:var(–mono); font-size:12px; line-height:2.2;
+letter-spacing:1.5px; text-transform:uppercase;
+color:var(–gray);
+}
+
+/* スピナー */
+.spin {
+display:inline-block; width:12px; height:12px;
+border:2px solid rgba(0,207,255,0.2); border-top-color:var(–neon);
+border-radius:50%; animation:spinning 0.7s linear infinite; vertical-align:middle;
+}
+@keyframes spinning { to{transform:rotate(360deg)} }
+
+/* ===== 追加指標セクション ===== */
+.extra-metrics{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.em{background:var(–bg4);border:1px solid rgba(0,207,255,0.08);border-radius:6px;padding:9px 12px}
+.em.full{grid-column:1/-1}
+.em-label{font-family:var(–mono);font-size:9px;font-weight:700;color:var(–gray);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.em-value{font-family:var(–mono);font-size:14px;font-weight:700;color:var(–white)}
+.em-sub{font-family:var(–mono);font-size:10px;color:var(–gray);margin-top:2px}
+
+/* トレンドスコアバー */
+.tscore-wrap{margin-top:5px}
+.tscore-track{height:5px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden}
+.tscore-fill{height:100%;border-radius:3px;transition:width 0.7s ease}
+.tscore-labels{display:flex;justify-content:space-between;font-family:var(–mono);font-size:9px;color:var(–gray);margin-top:3px}
+
+/* 出来高急増バッジ */
+.vol-surge{display:inline-block;font-family:var(–mono);font-size:9px;font-weight:800;
+padding:2px 7px;border-radius:3px;margin-left:6px;
+background:rgba(255,204,0,0.15);border:1px solid rgba(255,204,0,0.5);color:var(–gold)}
+
+/* スクリーナー追加条件 */
+.cond-divider{font-family:var(–mono);font-size:9px;font-weight:700;color:var(–gray);
+letter-spacing:3px;margin:14px 0 8px;text-transform:uppercase}
+
+/* APIソース切替 */
+.api-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.api-label{font-family:var(–mono);font-size:10px;color:var(–gray);letter-spacing:2px}
+.api-btn{font-family:var(–mono);font-size:10px;font-weight:700;
+background:transparent;border:1px solid rgba(255,255,255,0.12);
+color:var(–off-white);padding:5px 12px;border-radius:4px;
+cursor:pointer;transition:all 0.2s;letter-spacing:0.5px}
+.api-btn:hover{border-color:var(–neon);color:var(–neon)}
+.api-btn.active{background:var(–neon-dim);border-color:var(–neon);color:var(–neon);box-shadow:var(–neon-glow-s)}
+.api-status{font-family:var(–mono);font-size:10px;padding:4px 10px;border-radius:4px}
+.api-status.ok{color:var(–green);background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3)}
+.api-status.ng{color:var(–red);background:rgba(255,51,85,0.08);border:1px solid rgba(255,51,85,0.3)}
+
+/* スマホ */
+@media(max-width:500px){
+.cards-grid { grid-template-columns:1fr; }
+.price-main { font-size:28px; }
+.card-code  { font-size:22px; }
+.cond-grid  { grid-template-columns:1fr; }
+.legend-grid{ grid-template-columns:1fr; }
+.hdr-right  { gap:7px; }
+.timer      { font-size:12px; }
+}
+</style>
 
 </head>
 <body>
 
+<!-- ヘッダー -->
+
 <header>
   <div class="hdr">
     <div class="logo">
-      <span class="logo-icon">📡</span>
+      <div class="logo-box">📡</div>
       <div>
-        <div class="logo-text">CROSS SCANNER</div>
-        <div class="logo-sub">日本株 ゴールデン/デッドクロス 強シグナル検知</div>
+        <div class="logo-title">CROSS SCANNER</div>
+        <div class="logo-sub">Japan Equity · Golden Cross Detection</div>
       </div>
     </div>
     <div class="hdr-right">
-      <div class="timer-badge">AUTO <span id="timerDisplay">5:00</span></div>
-      <button class="btn btn-blue" onclick="refreshAll()" id="refreshBtn">
-        <span id="refreshIcon">🔄</span> 全更新
+      <div class="timer">
+        <div class="timer-dot"></div>
+        AUTO <span id="timerDisplay">5:00</span>
+      </div>
+      <button class="btn btn-neon" onclick="refreshAll()" id="refreshBtn">
+        <span id="refreshIcon">↺</span> 更新
       </button>
     </div>
   </div>
@@ -262,876 +673,839 @@
 
   <!-- 銘柄追加 -->
 
-  <div class="panel blue">
-    <div class="panel-title">▸ 銘柄を追加（東証4桁）</div>
-    <div class="add-form">
-      <div class="input-wrap">
-        <label>銘柄コード</label>
-        <input type="text" id="codeInput" class="stock-input" maxlength="4"
-          placeholder="例: 7203" inputmode="numeric"
-          onkeydown="if(event.key==='Enter')addStock()"/>
-      </div>
-      <button class="btn btn-green" onclick="addStock()" style="align-self:flex-end;padding:9px 18px">＋ 追加</button>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title neon">銘柄を追加</div>
     </div>
-    <div class="presets">
-      <span style="font-size:10px;color:var(--text-secondary);align-self:center">人気：</span>
-      <button class="preset-btn" onclick="addPreset('7203')">7203 トヨタ</button>
-      <button class="preset-btn" onclick="addPreset('6758')">6758 ソニー</button>
-      <button class="preset-btn" onclick="addPreset('9984')">9984 SBG</button>
-      <button class="preset-btn" onclick="addPreset('6861')">6861 キーエンス</button>
-      <button class="preset-btn" onclick="addPreset('8306')">8306 三菱UFJ</button>
-      <button class="preset-btn" onclick="addPreset('4063')">4063 信越化学</button>
+    <div class="panel-body">
+      <div class="add-form">
+        <div class="inp-group">
+          <div class="inp-label">東証コード（4桁）</div>
+          <input type="text" id="codeInput" class="code-input"
+            maxlength="4" placeholder="7203" inputmode="numeric"
+            onkeydown="if(event.key==='Enter')addStock()"/>
+        </div>
+        <button class="btn btn-neon" onclick="addStock()" style="align-self:flex-end;padding:10px 20px;font-size:13px">
+          ＋ 追加
+        </button>
+      </div>
+      <div class="presets">
+        <span class="pre-lbl">人気銘柄：</span>
+        <button class="preset" onclick="addPreset('7203')">7203 トヨタ</button>
+        <button class="preset" onclick="addPreset('6758')">6758 ソニー</button>
+        <button class="preset" onclick="addPreset('9984')">9984 SBG</button>
+        <button class="preset" onclick="addPreset('6861')">6861 キーエンス</button>
+        <button class="preset" onclick="addPreset('8306')">8306 三菱UFJ</button>
+        <button class="preset" onclick="addPreset('4063')">4063 信越化学</button>
+      </div>
     </div>
   </div>
 
-  <!-- ★ 自動銘柄選定パネル -->
+  <!-- スクリーナー -->
 
-  <div class="panel gold">
-    <div class="panel-title">🤖 自動銘柄スクリーナー</div>
-    <div class="screen-desc">
-      条件を選んで「スキャン開始」を押すと、<strong>日経225の主要銘柄</strong>から
-      条件に合う銘柄を自動でスキャンします。見つかった銘柄はワンタップで監視リストに追加できます。
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title gold">🤖 自動スクリーナー</div>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--gray)">東証上場 約500銘柄収録</span>
     </div>
-    <div class="screen-grid">
-      <div class="screen-option active">
-        <input type="checkbox" id="cond-sgc" checked/>
-        <label for="cond-sgc">🔥 強GC（RSI≤50）</label>
-        <div class="opt-desc">最高精度の底打ちシグナル</div>
+    <div class="panel-body">
+      <div class="screen-desc">
+        セクターと条件を選んで <strong>【スキャン開始】</strong> を押すと自動スキャン。<br>
+        ヒットした銘柄はタップで監視リストに追加できます。
       </div>
-      <div class="screen-option">
-        <input type="checkbox" id="cond-gc"/>
-        <label for="cond-gc">✨ ゴールデンクロス</label>
-        <div class="opt-desc">通常GC（RSI問わず）</div>
-      </div>
-      <div class="screen-option">
-        <input type="checkbox" id="cond-rsi-low"/>
-        <label for="cond-rsi-low">📉 RSI 30以下</label>
-        <div class="opt-desc">売られ過ぎ圏の銘柄</div>
-      </div>
-      <div class="screen-option">
-        <input type="checkbox" id="cond-up"/>
-        <label for="cond-up">↑ 上昇トレンド中</label>
-        <div class="opt-desc">MA5 ＞ MA25 継続中</div>
-      </div>
+
+```
+  <div class="sub-lbl">// セクター選択</div>
+  <div class="sector-row" id="sectorBtns">
+    <button class="sec-btn active" data-sector="all"     onclick="selectSector(this)">全セクター</button>
+    <button class="sec-btn"        data-sector="prime"   onclick="selectSector(this)">プライム</button>
+    <button class="sec-btn"        data-sector="tech"    onclick="selectSector(this)">テクノロジー</button>
+    <button class="sec-btn"        data-sector="finance" onclick="selectSector(this)">金融</button>
+    <button class="sec-btn"        data-sector="auto"    onclick="selectSector(this)">自動車</button>
+    <button class="sec-btn"        data-sector="retail"  onclick="selectSector(this)">小売・食品</button>
+    <button class="sec-btn"        data-sector="pharma"  onclick="selectSector(this)">医薬・医療</button>
+    <button class="sec-btn"        data-sector="energy"  onclick="selectSector(this)">エネルギー</button>
+    <button class="sec-btn"        data-sector="estate"  onclick="selectSector(this)">不動産</button>
+    <button class="sec-btn"        data-sector="growth"  onclick="selectSector(this)">グロース</button>
+    <button class="sec-btn"        data-sector="service" onclick="selectSector(this)">サービス</button>
+  </div>
+
+  <div class="sub-lbl">// シグナル条件</div>
+  <div class="cond-grid">
+    <div class="cond-item active">
+      <div><input type="checkbox" id="cond-sgc" checked/><label for="cond-sgc">🔥 強GC（RSI≤50）</label></div>
+      <div class="cond-sub">売られ過ぎ圏からの底打ち反転</div>
     </div>
-    <button class="btn btn-gold" onclick="startScreener()" id="screenerBtn" style="font-size:13px;padding:10px 20px">
+    <div class="cond-item">
+      <div><input type="checkbox" id="cond-gc"/><label for="cond-gc">✨ ゴールデンクロス</label></div>
+      <div class="cond-sub">通常GC（RSI問わず）</div>
+    </div>
+    <div class="cond-item">
+      <div><input type="checkbox" id="cond-rsi-low"/><label for="cond-rsi-low">📉 RSI 30以下</label></div>
+      <div class="cond-sub">売られ過ぎ圏の銘柄</div>
+    </div>
+    <div class="cond-item">
+      <div><input type="checkbox" id="cond-up"/><label for="cond-up">↑ 上昇トレンド</label></div>
+      <div class="cond-sub">MA5 ＞ MA25 継続中</div>
+    </div>
+  </div>
+
+  <!-- APIソース切替 -->
+  <div class="sub-lbl" style="margin-bottom:8px">// データソース</div>
+  <div class="api-row">
+    <span class="api-label">SOURCE:</span>
+    <button class="api-btn active" data-api="yahoo" onclick="selectApi(this)">Yahoo Finance</button>
+    <button class="api-btn"        data-api="stooq" onclick="selectApi(this)">Stooq（バックアップ）</button>
+    <span class="api-status ok" id="apiStatus">● 接続中</span>
+  </div>
+
+  <!-- 追加フィルター -->
+  <div class="cond-divider">// 出来高・代金フィルター（ダマシ除去）</div>
+  <div class="cond-grid">
+    <div class="cond-item">
+      <div><input type="checkbox" id="cond-vol-surge"/><label for="cond-vol-surge">📊 出来高急増（前日比2倍以上）</label></div>
+      <div class="cond-sub">出来高を伴うGCは信頼性が高い</div>
+    </div>
+    <div class="cond-item">
+      <div><input type="checkbox" id="cond-vol-min"/><label for="cond-vol-min">💴 売買代金1億円以上</label></div>
+      <div class="cond-sub">流動性の低い銘柄を除外</div>
+    </div>
+    <div class="cond-item">
+      <div><input type="checkbox" id="cond-ma25-up"/><label for="cond-ma25-up">📐 MA25が上向き</label></div>
+      <div class="cond-sub">トレンド方向と一致するGCのみ</div>
+    </div>
+    <div class="cond-item">
+      <div><input type="checkbox" id="cond-new-high"/><label for="cond-new-high">🏔️ 直近20日高値更新</label></div>
+      <div class="cond-sub">モメンタムが強い銘柄のみ</div>
+    </div>
+  </div>
+
+  <div class="scan-row">
+    <button class="btn btn-gold" onclick="startScreener()" id="screenerBtn" style="font-size:14px;padding:11px 24px">
       🔍 スキャン開始
     </button>
-    <div class="screen-progress" id="screenProgress">
-      <div class="screen-progress-fill" id="screenProgressFill"></div>
-    </div>
-    <div class="screen-results" id="screenResults" style="display:none">
-      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px" id="screenStatus"></div>
-      <div class="screen-result-list" id="screenList"></div>
-    </div>
+    <span class="scan-count" id="sectorCount">全セクター：約500銘柄</span>
+  </div>
+  <div class="prog" id="screenProgress">
+    <div class="prog-fill" id="screenProgressFill"></div>
+  </div>
+  <div id="screenResults" style="display:none">
+    <div class="scan-status" id="screenStatus"></div>
+    <div class="result-list" id="screenList"></div>
+  </div>
+</div>
+```
+
   </div>
 
   <!-- シグナル説明 -->
 
-  <div class="panel gold">
-    <div class="panel-title">▸ シグナル判定ロジック</div>
-    <div class="legend-grid">
-      <div class="legend-item strong">
-        <span class="sig sig-sgc legend-badge">🔥 強GC</span>
-        <div class="legend-desc"><strong>GC + RSI≤50</strong><br>売られ過ぎ圏からの底打ち反転。高精度シグナル</div>
-      </div>
-      <div class="legend-item">
-        <span class="sig sig-gc legend-badge">✨ GC</span>
-        <div class="legend-desc"><strong>GC + RSI＞50</strong><br>クロスは発生。過熱圏のため追随注意</div>
-      </div>
-      <div class="legend-item">
-        <span class="sig sig-dc legend-badge">💀 DC</span>
-        <div class="legend-desc"><strong>デッドクロス</strong><br>前日MA5≥MA25 → 当日MA5＜MA25</div>
-      </div>
-      <div class="legend-item">
-        <span class="sig sig-up legend-badge">↑ 上昇</span>
-        <div class="legend-desc">MA5＞MA25（上昇トレンド継続）</div>
-      </div>
-      <div class="legend-item">
-        <span class="sig sig-down legend-badge">↓ 下降</span>
-        <div class="legend-desc">MA5＜MA25（下降トレンド継続）</div>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title gold">シグナル判定ロジック</div>
+    </div>
+    <div class="panel-body">
+      <div class="legend-grid">
+        <div class="leg-row hl">
+          <span class="badge b-sgc leg-badge">🔥 強GC</span>
+          <div class="leg-text"><strong>GC + RSI≤50</strong><br>売られ過ぎ圏からの底打ち反転。高精度シグナル</div>
+        </div>
+        <div class="leg-row">
+          <span class="badge b-gc leg-badge">✨ GC</span>
+          <div class="leg-text"><strong>GC + RSI＞50</strong><br>クロス発生。過熱圏のため追随注意</div>
+        </div>
+        <div class="leg-row">
+          <span class="badge b-dc leg-badge">💀 DC</span>
+          <div class="leg-text"><strong>デッドクロス</strong><br>MA5がMA25を下抜け。売りシグナル</div>
+        </div>
+        <div class="leg-row">
+          <span class="badge b-up leg-badge">↑ 上昇</span>
+          <div class="leg-text">MA5＞MA25 上昇トレンド継続</div>
+        </div>
+        <div class="leg-row">
+          <span class="badge b-down leg-badge">↓ 下降</span>
+          <div class="leg-text">MA5＜MA25 下降トレンド継続</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- LINE設定 -->
+  <!-- LINE -->
 
-  <div class="panel green">
-    <div class="panel-title">▸ LINE 通知設定（オプション）</div>
-    <div class="webhook-row">
-      <input type="text" id="lineWebhookUrl" class="webhook-input"
-        placeholder="https://notify-api.line.me/api/notify  ← LINE Notify URLを貼り付け"/>
-      <button class="btn-line" onclick="testLineNotify()">📲 テスト送信</button>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title green">LINE 通知設定（オプション）</div>
+    </div>
+    <div class="panel-body">
+      <div class="line-row">
+        <input type="text" id="lineWebhookUrl" class="line-inp"
+          placeholder="https://notify-api.line.me/api/notify"/>
+        <button class="btn-line" onclick="testLineNotify()">📲 テスト送信</button>
+      </div>
     </div>
   </div>
 
   <!-- 監視リスト -->
 
   <div class="watch-hdr">
-    <div class="watch-title">▸ 監視リスト</div>
-    <span class="watch-count" id="watchCount">0 銘柄</span>
+    <div class="watch-title">監視リスト</div>
+    <span class="watch-badge" id="watchCount">0 銘柄</span>
   </div>
+
   <div class="cards-grid" id="cardsGrid">
-    <div class="empty" id="emptyState" style="grid-column:1/-1">
-      <div class="empty-icon">🔭</div>
-      <div class="empty-text">銘柄コードを入力するか<br>スクリーナーで自動検索してください</div>
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">◎</div>
+      <div class="empty-text">銘柄未登録<br>コードを追加するか<br>スクリーナーで自動検索</div>
     </div>
   </div>
 
 </main>
 
-<!-- アラートバナー -->
+<!-- アラート -->
 
-<div class="alert-banner" id="alertBanner">
+<div class="alert" id="alertBanner">
   <div class="alert-icon">🔥</div>
   <div>
     <div class="alert-title" id="alertTitle"></div>
-    <div class="alert-body" id="alertBody"></div>
+    <div class="alert-body"  id="alertBody"></div>
   </div>
-  <button class="alert-close" onclick="closeAlert()">✕</button>
+  <button class="alert-x" onclick="closeAlert()">✕</button>
 </div>
 
 <script>
-/* =============================================
-   Promise.allSettled ポリフィル（古いSafari対応）
-   ============================================= */
-if (!Promise.allSettled) {
-  Promise.allSettled = function(promises) {
-    return Promise.all(promises.map(function(p) {
-      return Promise.resolve(p).then(
-        function(v){ return {status:'fulfilled',value:v}; },
-        function(e){ return {status:'rejected',reason:e}; }
+/* Promise.allSettled ポリフィル */
+if(!Promise.allSettled){
+  Promise.allSettled=function(p){
+    return Promise.all(p.map(function(x){
+      return Promise.resolve(x).then(
+        function(v){return{status:'fulfilled',value:v};},
+        function(e){return{status:'rejected',reason:e};}
       );
     }));
   };
 }
 
-/* =============================================
-   グローバル状態
-   ============================================= */
-var watchList      = JSON.parse(localStorage.getItem('watchList') || '[]');
-var lineWebhookUrl = localStorage.getItem('lineWebhookUrl') || '';
-var AUTO_SEC       = 300;
-var timerRemaining = AUTO_SEC;
-var alertTimeout   = null;
-var chartInstances = {}; // コード → Chart インスタンス
+/* ===== 銘柄DB ===== */
+var SECTORS={
+  prime:['7203','6758','9984','6861','8035','7974','4519','8306','4063','9433','6367','6954','7741','4568','8058','4502','6594','9432','2914','6752','7751','5108','8001','8411','6971','3382','6301','2802','4543','8316','6503','7269','8802','4661','6857','8766','5401','8031','7011','6981','3407','6645','7733','4755','6479','7270','6920','4324','6762','2413'],
+  tech:['6857','6920','4063','8035','6861','6723','6762','6971','6594','6479','4704','3659','9613','4307','6503','9984','6701','6702','6952','6745','3696','4726','3994','4587','6526','6146','6728','6963','6967','4062','9434','3697','4185','6532','2432','3092','4565','4448','3993','6069','4441','4689','3769','3765','4722','4436','6255','4476','4490','4492'],
+  finance:['8306','8316','8411','8301','8308','8309','8331','8333','8341','8354','8358','8362','8366','8377','8388','8398','8399','8403','8404','8410','8601','8604','8630','8750','8766','8795','8802','8830','7186','8369','8572','8570','8596','7167','8418','8334','7182','8370','8424','8425'],
+  auto:['7203','7267','7269','7270','7201','7202','7211','7261','7272','7282','5105','5108','7731','7733','7741','7751','9201','9202','9020','9021','9022','9031','9041','9044','9045','9048','9005','9007','9008','9009','9006','9301','9064','9147','9104','9107','9101','6902','7013','7012'],
+  retail:['3382','2802','2914','7974','3086','3099','3097','2678','7453','8267','9843','9983','3349','2702','2768','2282','2871','2269','2288','2875','2590','2579','2587','2784','3088','3141','3193','3198','3222','2670','2695','7412','9861','9873','9887','2503','2501','2502','2531','2533','2897','2296','2208','2201','2212','2220','2229'],
+  pharma:['4502','4519','4568','4523','4506','4507','4508','4512','4514','4516','4521','4522','4524','4525','4527','4530','4536','4538','4539','4540','4543','4544','4549','4551','4552','4555','4559','4561','4564','4565','4571','4572','4578','4579','4583','4587','4588','6869','7741','7762','2371','3034','3003','6055','4644','4576','6086','4593','4596'],
+  energy:['5401','5411','5413','5423','5440','5463','5471','4063','4183','4188','4208','4217','4272','3405','3407','3411','3103','3105','3106','3110','4004','4005','4021','4042','4043','4061','4091','4092','4097','4118','5020','5019','5011','5012','5013','5015','5016','5018','1605','1662','3436','5703','5711','5714','5715','5726','5727','5741','5742','5807'],
+  estate:['8802','8830','8801','8804','8805','8806','8808','8815','8818','8819','8848','8849','8850','8853','8860','8870','8878','8879','8881','8887','1925','1928','1942','1944','1951','1963','1954','1878','1801','1802','1803','1808','1811','1812','1813','1814','1815','1820','1824','1833','1860','1861','1865','1880','1885','1893'],
+  growth:['4385','4448','4493','4478','4485','4499','4371','4375','4382','4418','4419','4420','4421','4422','4423','4424','4425','4426','4427','4428','4429','4430','4431','4432','4433','4434','4435','4436','4437','4438','4439','4440','4441','4442','4443','4444','4445','4446','4447','4449','4450','4451','4452','4453','4454','4455','4456','4457','4458','4459','4460','4461','4462','4463','4464','4465','4466','4467','4468','4469','4470','4471','4472','4473','4474','4475','4476','4477','4479','4480'],
+  service:['9984','9433','9432','9434','4689','2432','3659','4307','2413','6098','9697','7832','3765','3668','3632','3672','3727','4751','2462','2176','2371','6030','4371','2315','2326','2327','3996','4666','2330','2379','4820','3923','3925','3926','3928','3929','3930','3932','3933','3934','3935','3936','3938','3939','3940','3941','3943','3944','3945','3947']
+};
+var ALL_CODES=(function(){
+  var seen={},r=[];
+  Object.keys(SECTORS).forEach(function(s){
+    SECTORS[s].forEach(function(c){if(!seen[c]&&/^\d{4}$/.test(c)){seen[c]=true;r.push(c);}});
+  });
+  return r;
+})();
 
-/* =============================================
-   スクリーナー対象銘柄リスト（日経225主要銘柄）
-   ============================================= */
-var SCREEN_CODES = [
-  '7203','6758','9984','6861','8306','4063','6098','8035','9432','7974',
-  '6367','4519','6954','7741','4568','8058','4502','6594','9433','8316',
-  '6501','7267','6702','4661','2914','6752','7751','5108','8001','8411',
-  '6971','3382','7符','6301','2802','4543','6723','6503','7269','8802',
-  '6857','4307','3659','6645','7733','4755','8766','6479','5401','8031',
-  '7270','6920','4324','6762','6594','2413','8750','7011','6981','3407'
-].filter(function(c){ return /^\d{4}$/.test(c); }); // 数字4桁のみ
+/* ===== 状態 ===== */
+var watchList=JSON.parse(localStorage.getItem('watchList')||'[]');
+var lineWebhookUrl=localStorage.getItem('lineWebhookUrl')||'';
+var AUTO_SEC=300, timerRemaining=AUTO_SEC;
+var alertTimeout=null, chartInstances={};
+var currentSector='all';
+var apiSource='yahoo'; // 'yahoo' or 'stooq'
 
-/* =============================================
-   初期化
-   ============================================= */
-window.addEventListener('DOMContentLoaded', function() {
-  if (lineWebhookUrl) document.getElementById('lineWebhookUrl').value = lineWebhookUrl;
+/* ===== 初期化 ===== */
+window.addEventListener('DOMContentLoaded',function(){
+  if(lineWebhookUrl) document.getElementById('lineWebhookUrl').value=lineWebhookUrl;
   renderAllCards();
   startCountdown();
-  if (watchList.length > 0) refreshAll();
-
-  // スクリーンオプションのクリックでチェック連動
-  var opts = document.querySelectorAll('.screen-option');
-  opts.forEach(function(opt) {
-    opt.addEventListener('click', function(e) {
-      if (e.target.tagName !== 'INPUT') {
-        var cb = opt.querySelector('input[type=checkbox]');
-        if (cb) cb.checked = !cb.checked;
-      }
-      opt.classList.toggle('active', opt.querySelector('input[type=checkbox]').checked);
+  if(watchList.length>0) refreshAll();
+  updateSectorCount();
+  document.querySelectorAll('.cond-item').forEach(function(el){
+    el.addEventListener('click',function(e){
+      if(e.target.tagName!=='INPUT'){var cb=el.querySelector('input');if(cb)cb.checked=!cb.checked;}
+      el.classList.toggle('active',el.querySelector('input').checked);
     });
   });
 });
 
-/* =============================================
-   銘柄追加 / 削除
-   ============================================= */
-function addStock() {
-  var input = document.getElementById('codeInput');
-  var code  = input.value.trim().replace(/\D/g,'');
-  if (code.length !== 4) { flashError('4桁の数字を入力してください'); return; }
-  if (watchList.indexOf(code) >= 0) { flashError(code+' は登録済みです'); return; }
-  watchList.push(code);
+/* ===== APIソース切替 ===== */
+function selectApi(btn){
+  document.querySelectorAll('.api-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  apiSource=btn.getAttribute('data-api');
+  var st=document.getElementById('apiStatus');
+  if(st){st.textContent='● 接続中';st.className='api-status ok';}
+}
+
+/* ===== セクター ===== */
+function selectSector(btn){
+  document.querySelectorAll('.sec-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  currentSector=btn.getAttribute('data-sector');
+  updateSectorCount();
+}
+function updateSectorCount(){
+  var codes=currentSector==='all'?ALL_CODES:(SECTORS[currentSector]||[]);
+  var names={all:'全セクター',prime:'プライム',tech:'テクノロジー',finance:'金融',auto:'自動車',retail:'小売・食品',pharma:'医薬・医療',energy:'エネルギー',estate:'不動産',growth:'グロース',service:'サービス'};
+  var el=document.getElementById('sectorCount');
+  if(el) el.textContent=(names[currentSector]||currentSector)+'：約'+codes.length+'銘柄をスキャン';
+}
+
+/* ===== 追加・削除 ===== */
+function addStock(){
+  var inp=document.getElementById('codeInput');
+  var code=inp.value.trim().replace(/\D/g,'');
+  if(code.length!==4){flashErr('4桁の数字を入力してください');return;}
+  if(watchList.indexOf(code)>=0){flashErr(code+' は登録済みです');return;}
+  watchList.push(code);saveList();inp.value='';addCard(code);fetchStockData(code);
+}
+function addPreset(code){
+  if(watchList.indexOf(code)>=0)return;
+  watchList.push(code);saveList();addCard(code);fetchStockData(code);
+}
+function removeStock(code){
+  watchList=watchList.filter(function(c){return c!==code;});
   saveList();
-  input.value = '';
-  addCard(code);
-  fetchStockData(code);
+  if(chartInstances[code]){chartInstances[code].destroy();delete chartInstances[code];}
+  var el=document.getElementById('card-'+code);
+  if(el){el.style.transition='all 0.3s ease';el.style.opacity='0';el.style.transform='scale(0.9)';setTimeout(function(){el.remove();},300);}
+  updateEmpty();updateCount();
+}
+function saveList(){localStorage.setItem('watchList',JSON.stringify(watchList));updateCount();}
+function updateCount(){document.getElementById('watchCount').textContent=watchList.length+' 銘柄';}
+function updateEmpty(){document.getElementById('emptyState').style.display=watchList.length===0?'block':'none';}
+function flashErr(msg){
+  var i=document.getElementById('codeInput');
+  i.style.borderColor='var(--red)';i.style.boxShadow='0 0 10px rgba(255,51,85,0.4)';i.placeholder=msg;
+  setTimeout(function(){i.style.borderColor='';i.style.boxShadow='';i.placeholder='7203';},2000);
 }
 
-function addPreset(code) {
-  if (watchList.indexOf(code) >= 0) return;
-  watchList.push(code);
-  saveList();
-  addCard(code);
-  fetchStockData(code);
+/* ===== カードDOM ===== */
+function renderAllCards(){watchList.forEach(function(c){addCard(c);});updateEmpty();updateCount();}
+function addCard(code){
+  updateEmpty();updateCount();
+  var grid=document.getElementById('cardsGrid');
+  if(document.getElementById('card-'+code))return;
+  var c=document.createElement('div');
+  c.className='card';c.id='card-'+code;
+  c.innerHTML='<div class="card-bar"></div><div class="card-body">'+buildCardHTML(code)+'</div>';
+  grid.insertBefore(c,document.getElementById('emptyState'));
 }
-
-function removeStock(code) {
-  watchList = watchList.filter(function(c){ return c !== code; });
-  saveList();
-  // チャートインスタンスを破棄
-  if (chartInstances[code]) {
-    chartInstances[code].destroy();
-    delete chartInstances[code];
-  }
-  var el = document.getElementById('card-'+code);
-  if (el) {
-    el.style.transition = 'all 0.3s ease';
-    el.style.opacity    = '0';
-    el.style.transform  = 'scale(0.93)';
-    setTimeout(function(){ el.remove(); }, 300);
-  }
-  updateEmpty();
-  updateCount();
-}
-
-function saveList() {
-  localStorage.setItem('watchList', JSON.stringify(watchList));
-  updateCount();
-}
-function updateCount() {
-  document.getElementById('watchCount').textContent = watchList.length + ' 銘柄';
-}
-function updateEmpty() {
-  document.getElementById('emptyState').style.display = watchList.length === 0 ? 'block' : 'none';
-}
-function flashError(msg) {
-  var input = document.getElementById('codeInput');
-  input.style.borderColor = 'var(--accent-red)';
-  input.style.boxShadow   = '0 0 10px rgba(255,77,109,0.4)';
-  input.placeholder       = msg;
-  setTimeout(function(){
-    input.style.borderColor = '';
-    input.style.boxShadow   = '';
-    input.placeholder       = '例: 7203';
-  }, 2000);
-}
-
-/* =============================================
-   カード DOM
-   ============================================= */
-function renderAllCards() {
-  watchList.forEach(function(code){ addCard(code); });
-  updateEmpty();
-  updateCount();
-}
-
-function addCard(code) {
-  updateEmpty();
-  updateCount();
-  var grid = document.getElementById('cardsGrid');
-  if (document.getElementById('card-'+code)) return;
-  var card = document.createElement('div');
-  card.className = 'stock-card';
-  card.id        = 'card-'+code;
-  card.innerHTML = buildCardHTML(code);
-  grid.insertBefore(card, document.getElementById('emptyState'));
-}
-
-function buildCardHTML(code) {
+function buildCardHTML(code){
   return '<div class="card-hdr">'
     +'<div><div class="card-code">'+code+'</div><div class="card-name" id="name-'+code+'">読み込み中...</div></div>'
-    +'<div class="card-actions">'
-    +'<span class="sig sig-load" id="badge-'+code+'"><span class="spinner"></span> 取得中</span>'
-    +'<button class="btn btn-red" onclick="removeStock(\''+code+'\')" style="padding:4px 8px;font-size:11px">✕</button>'
+    +'<div class="card-right">'
+    +'<span class="badge b-load" id="badge-'+code+'"><span class="spin"></span> 取得中</span>'
+    +'<button class="btn btn-del" onclick="removeStock(\''+code+'\')">✕ 削除</button>'
     +'</div></div>'
-    +'<div class="price-row"><span class="price-main" id="price-'+code+'">---</span><span class="price-change neu" id="change-'+code+'">---</span></div>'
+    +'<div class="div"></div>'
+    +'<div class="price-row">'
+    +'<span class="price-main" id="price-'+code+'">----</span>'
+    +'<span class="price-chg c-neu" id="change-'+code+'">----</span>'
+    +'</div>'
     +'<div class="metrics">'
-    +'<div class="mc"><div class="ml">MA5</div><div class="mv" id="ma5-'+code+'">---</div></div>'
-    +'<div class="mc"><div class="ml">MA25</div><div class="mv" id="ma25-'+code+'">---</div></div>'
-    +'<div class="rsi-wrap">'
-    +'<div class="rsi-hdr"><span class="rsi-lbl">RSI（14）</span><span class="rsi-val" id="rsi-'+code+'">---</span></div>'
+    +'<div class="mc"><div class="ml">MA5（短期）</div><div class="mv" id="ma5-'+code+'">---</div></div>'
+    +'<div class="mc"><div class="ml">MA25（長期）</div><div class="mv" id="ma25-'+code+'">---</div></div>'
+    +'<div class="rsi-box">'
+    +'<div class="rsi-top"><span class="rsi-lbl">RSI（14）</span><span class="rsi-num" id="rsi-'+code+'">--</span></div>'
     +'<div class="rsi-track"><div class="rsi-fill" id="rsiFill-'+code+'" style="width:0%"></div></div>'
-    +'<div class="rsi-hint"><span>30 売られ過ぎ</span><span class="thr">▲強GC判定(50)</span><span>70 買われ過ぎ</span></div>'
+    +'<div class="rsi-hints"><span>30 売られ過ぎ</span><span class="hl">▲ 強GC判定ライン（50）</span><span>70 買われ過ぎ</span></div>'
     +'</div>'
-    +'<div class="vol-wrap"><div class="vol-hdr"><span class="vol-lbl">出来高</span><span class="vol-val" id="volume-'+code+'">---</span></div></div>'
+    +'<div class="vol-box"><span class="vol-lbl">出来高</span><span class="vol-val" id="volume-'+code+'">---</span></div>'
     +'</div>'
-    +'<button class="chart-toggle" onclick="toggleChart(\''+code+'\')" id="chartToggle-'+code+'">📈 チャートを表示</button>'
-    +'<div class="chart-area" id="chartArea-'+code+'">'
-    +'<canvas id="chart-'+code+'"></canvas>'
-    +'</div>'
+    +'<button class="chart-btn" onclick="toggleChart(\''+code+'\')" id="chartToggle-'+code+'">📈 チャートを表示</button>'
+    +'<div class="chart-area" id="chartArea-'+code+'"><canvas id="chart-'+code+'"></canvas></div>'
+    +'<div class="extra-metrics">'
+    +'<div class="em"><div class="em-label">MA25 傾き</div><div class="em-value" id="slope-'+code+'">---</div><div class="em-sub" id="slope-sub-'+code+'"></div></div>'
+    +'<div class="em"><div class="em-label">ボラティリティ</div><div class="em-value" id="atr-'+code+'">---</div><div class="em-sub">ATR%（20日）</div></div>'
+    +'<div class="em full"><div class="em-label">トレンドスコア &nbsp;<span id="tscore-'+code+'" style="color:var(--neon);font-size:16px">-</span> / 10</div>'
+    +'<div class="tscore-wrap"><div class="tscore-track"><div class="tscore-fill" id="tsfill-'+code+'" style="width:0%"></div></div>'
+    +'<div class="tscore-labels"><span>弱</span><span>← スコア →</span><span>強</span></div></div>'
+    +'<div class="em-sub" id="tsdetail-'+code+'">---</div></div></div>'
     +'<div class="card-foot">'
-    +'<span class="card-updated" id="updated-'+code+'">未取得</span>'
-    +'<button class="btn btn-blue" onclick="fetchStockData(\''+code+'\')" style="padding:4px 10px;font-size:10px">🔄 更新</button>'
+    +'<span class="foot-time" id="updated-'+code+'">>未取得</span>'
+    +'<button class="btn btn-gray" onclick="fetchStockData(\''+code+'\')" style="font-size:10px;padding:5px 12px">↺ 更新</button>'
     +'</div>';
 }
 
-/* =============================================
-   ★ チャート描画
-   ============================================= */
-
-/**
- * チャートの表示/非表示を切り替える
- */
-function toggleChart(code) {
-  var area   = document.getElementById('chartArea-'+code);
-  var toggle = document.getElementById('chartToggle-'+code);
-  var isOpen = area.classList.contains('open');
-  if (isOpen) {
-    area.classList.remove('open');
-    toggle.textContent = '📈 チャートを表示';
-  } else {
-    area.classList.add('open');
-    toggle.textContent = '📉 チャートを隠す';
-    // データが既にあればチャートを描画
-    if (!chartInstances[code] && window._chartData && window._chartData[code]) {
-      drawChart(code, window._chartData[code]);
-    }
+/* ===== チャート ===== */
+function toggleChart(code){
+  var a=document.getElementById('chartArea-'+code),t=document.getElementById('chartToggle-'+code);
+  if(a.classList.contains('open')){a.classList.remove('open');t.textContent='📈 チャートを表示';}
+  else{
+    a.classList.add('open');t.textContent='📉 チャートを隠す';
+    if(!chartInstances[code]&&window._cd&&window._cd[code]) drawChart(code,window._cd[code]);
   }
 }
-
-/**
- * 終値 + MA5 + MA25 の折れ線チャートを描画する
- * @param {string}   code   - 銘柄コード
- * @param {object}   data   - {labels, closes, ma5arr, ma25arr}
- */
-function drawChart(code, data) {
-  var canvas = document.getElementById('chart-'+code);
-  if (!canvas) return;
-
-  // 既存インスタンスを破棄
-  if (chartInstances[code]) {
-    chartInstances[code].destroy();
-    delete chartInstances[code];
-  }
-
-  var ctx = canvas.getContext('2d');
-
-  chartInstances[code] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.labels,
-      datasets: [
-        {
-          label: '終値',
-          data: data.closes,
-          borderColor: '#4d9eff',
-          backgroundColor: 'rgba(77,158,255,0.08)',
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          fill: true,
-          tension: 0.3
-        },
-        {
-          label: 'MA5',
-          data: data.ma5arr,
-          borderColor: '#00e5a0',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-          tension: 0.3,
-          borderDash: []
-        },
-        {
-          label: 'MA25',
-          data: data.ma25arr,
-          borderColor: '#f0b429',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-          tension: 0.3,
-          borderDash: [4,3]
-        }
+function drawChart(code,data){
+  var canvas=document.getElementById('chart-'+code);if(!canvas)return;
+  if(chartInstances[code]){chartInstances[code].destroy();delete chartInstances[code];}
+  var ctx=canvas.getContext('2d');
+  chartInstances[code]=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:data.labels,
+      datasets:[
+        {label:'終値',data:data.closes,borderColor:'rgba(0,207,255,0.9)',backgroundColor:'rgba(0,207,255,0.06)',borderWidth:2,pointRadius:0,pointHoverRadius:4,fill:true,tension:0.3},
+        {label:'MA5', data:data.ma5arr, borderColor:'rgba(0,255,136,0.8)',borderWidth:1.5,pointRadius:0,fill:false,tension:0.3},
+        {label:'MA25',data:data.ma25arr,borderColor:'rgba(255,204,0,0.8)',borderWidth:1.5,pointRadius:0,fill:false,tension:0.3,borderDash:[5,3]}
       ]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 600 },
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          labels: {
-            color: '#6a85b0',
-            font: { size: 10 },
-            boxWidth: 14,
-            padding: 10
-          }
-        },
-        tooltip: {
-          backgroundColor: '#0f1623',
-          borderColor: '#1e2d4a',
-          borderWidth: 1,
-          titleColor: '#e8f0ff',
-          bodyColor: '#a0c0ff',
-          callbacks: {
-            label: function(ctx) {
-              return ctx.dataset.label + ': ¥' + Number(ctx.raw).toLocaleString('ja-JP',{maximumFractionDigits:1});
-            }
-          }
-        }
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:500},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#7799aa',font:{family:'JetBrains Mono',size:10},boxWidth:14,padding:10}},
+        tooltip:{backgroundColor:'rgba(0,0,0,0.92)',borderColor:'rgba(0,207,255,0.3)',borderWidth:1,
+          titleColor:'#00cfff',bodyColor:'#ccddee',
+          callbacks:{label:function(c){return c.dataset.label+': ¥'+Number(c.raw).toLocaleString('ja-JP',{maximumFractionDigits:1});}}}
       },
-      scales: {
-        x: {
-          ticks: { color: '#6a85b0', font: { size: 9 }, maxTicksLimit: 6, maxRotation: 0 },
-          grid: { color: 'rgba(30,45,74,0.6)' }
-        },
-        y: {
-          ticks: {
-            color: '#6a85b0', font: { size: 9 },
-            callback: function(v){ return '¥'+Number(v).toLocaleString('ja-JP',{maximumFractionDigits:0}); }
-          },
-          grid: { color: 'rgba(30,45,74,0.6)' }
-        }
+      scales:{
+        x:{ticks:{color:'#7799aa',font:{family:'JetBrains Mono',size:9},maxTicksLimit:6,maxRotation:0},grid:{color:'rgba(0,207,255,0.05)'},border:{color:'rgba(0,207,255,0.1)'}},
+        y:{ticks:{color:'#7799aa',font:{family:'JetBrains Mono',size:9},callback:function(v){return '¥'+Number(v).toLocaleString('ja-JP',{maximumFractionDigits:0});}},grid:{color:'rgba(0,207,255,0.05)'},border:{color:'rgba(0,207,255,0.1)'}}
       }
     }
   });
+  canvas.parentElement.style.height='170px';
+}
+function buildChartData(closes,dates){
+  var n=closes.length,labels=dates.slice(-30),cls=closes.slice(-30);
+  var ma5arr=cls.map(function(_,i){if(i<4)return null;var s=0;for(var j=i-4;j<=i;j++)s+=cls[j];return s/5;});
+  var ma25arr=cls.map(function(_,i){var idx=(n-30)+i;if(idx<24)return null;var s=0;for(var j=idx-24;j<=idx;j++)s+=closes[j];return s/25;});
+  return{labels:labels,closes:cls,ma5arr:ma5arr,ma25arr:ma25arr};
+}
 
-  // 高さを固定（スマホでも見やすく）
-  canvas.parentElement.style.height = '180px';
+/* ===== データ取得（リトライ + Stooqフォールバック） ===== */
+
+/**
+ * Yahoo Finance から OHLCV データを取得する
+ * 失敗時は Stooq にフォールバック（2段階リトライ）
+ */
+async function fetchStockData(code){
+  var data=null;
+  // ① Yahoo Finance（最大2回リトライ）
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      data=await fetchFromYahoo(code);
+      if(data) break;
+    }catch(e){ console.warn('['+code+'] Yahoo attempt '+(attempt+1)+' failed:',e.message); }
+    if(attempt===0) await sleep(600); // 1回目失敗後少し待つ
+  }
+  // ② Stooq にフォールバック
+  if(!data){
+    try{
+      data=await fetchFromStooq(code);
+      var st=document.getElementById('apiStatus');
+      if(st){st.textContent='⚠ Stooq使用中';st.className='api-status ng';}
+    }catch(e){ console.error('['+code+'] Stooq fallback failed:',e.message); }
+  }
+  if(!data){ cardErr(code,'取得失敗（両ソース）'); return; }
+
+  // 指標計算
+  var closes=data.closes, volumes=data.volumes, dates=data.dates, name=data.name;
+  if(closes.length<26){ cardErr(code,'データ不足('+closes.length+'日)'); return; }
+
+  var cur=closes[closes.length-1], prev=closes[closes.length-2];
+  var chg=cur-prev, chgp=(chg/prev)*100;
+
+  var ma5t=calcMA(closes,5,0),  ma5p=calcMA(closes,5,1);
+  var ma25t=calcMA(closes,25,0), ma25p=calcMA(closes,25,1);
+  var ma25_5dago=calcMA(closes,25,5); // 5日前のMA25（傾き計算用）
+  var rsi=calcRSI(closes,14);
+  var vol=volumes[volumes.length-1];
+  var volPrev=volumes[volumes.length-2]||vol;
+
+  // ★ 新指標計算
+  var slope    = calcSlope(ma25t, ma25_5dago);      // MA25の5日傾き
+  var atr      = calcATR(closes, 20);               // ATR%
+  var isNewHigh= checkNewHigh(closes, 20);          // 直近20日高値更新
+  var tScore   = calcTrendScore({                   // トレンドスコア
+    sig: detectSignal(ma5t,ma5p,ma25t,ma25p,rsi),
+    rsi: rsi, slope: slope, atr: atr,
+    isNewHigh: isNewHigh,
+    volSurge: vol && volPrev ? vol/volPrev : 1,
+    ma5t: ma5t, ma25t: ma25t
+  });
+
+  var sig=detectSignal(ma5t,ma5p,ma25t,ma25p,rsi);
+  if(!window._cd)window._cd={};
+  window._cd[code]=buildChartData(closes,dates);
+  var area=document.getElementById('chartArea-'+code);
+  if(area&&area.classList.contains('open'))drawChart(code,window._cd[code]);
+
+  updateCard(code,{
+    name:name, cur:cur, chg:chg, chgp:chgp,
+    ma5:ma5t, ma25:ma25t, rsi:rsi,
+    vol:vol, volPrev:volPrev, price:cur,
+    sig:sig, slope:slope, atr:atr,
+    isNewHigh:isNewHigh, tScore:tScore
+  });
+  if(sig==='strong-gc'||sig==='gc'){
+    var s=sig==='strong-gc';
+    showAlert(code,s,rsi);sendLine(code,s,rsi,cur,ma5t,ma25t);
+  }
+}
+
+/** Yahoo Finance から取得 */
+async function fetchFromYahoo(code){
+  var url='https://query1.finance.yahoo.com/v8/finance/chart/'+code+'.T?range=60d&interval=1d';
+  var proxy='https://corsproxy.io/?'+encodeURIComponent(url);
+  var res=await fetch(proxy,);
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  var json=await res.json();
+  var result=json&&json.chart&&json.chart.result&&json.chart.result[0];
+  if(!result) throw new Error('no result');
+  var q=result.indicators.quote[0];
+  var closes =(q.close ||[]).filter(function(v){return v!=null;});
+  var volumes=(q.volume||[]).filter(function(v){return v!=null;});
+  var highs  =(q.high  ||[]).filter(function(v){return v!=null;});
+  var ts=result.timestamp||[];
+  var dates=ts.slice(-60).map(function(t){var d=new Date(t*1000);return(d.getMonth()+1)+'/'+(d.getDate());});
+  return{closes:closes,volumes:volumes,highs:highs,dates:dates,name:result.meta.longName||result.meta.shortName||code};
+}
+
+/** Stooq から取得（フォールバック） */
+async function fetchFromStooq(code){
+  // Stooq CSV形式: https://stooq.com/q/d/l/?s=7203.jp&i=d
+  var url='https://stooq.com/q/d/l/?s='+code+'.jp&i=d';
+  var proxy='https://corsproxy.io/?'+encodeURIComponent(url);
+  var res=await fetch(proxy,);
+  if(!res.ok) throw new Error('Stooq HTTP '+res.status);
+  var text=await res.text();
+  var lines=text.trim().split('\n').slice(1); // ヘッダー除去
+  if(lines.length<30) throw new Error('Stooq data insufficient');
+  lines=lines.slice(-60); // 直近60日
+  var closes=[],volumes=[],dates=[];
+  lines.forEach(function(line){
+    var cols=line.split(',');
+    if(cols.length>=5){
+      var c=parseFloat(cols[4]);
+      var v=parseInt(cols[5]||'0',10);
+      if(!isNaN(c)){closes.push(c);volumes.push(isNaN(v)?0:v);dates.push(cols[0]);}
+    }
+  });
+  return{closes:closes,volumes:volumes,highs:[],dates:dates,name:code+'.T(Stooq)'};
+}
+
+/* ===== 指標計算 ===== */
+function calcMA(p,n,off){
+  off=off||0;var e=p.length-1-off,s=e-n+1;if(s<0)return null;
+  var sum=0;for(var i=s;i<=e;i++)sum+=p[i];return sum/n;
+}
+function calcRSI(p,n){
+  n=n||14;if(p.length<n+1)return null;
+  var ch=[];for(var i=1;i<p.length;i++)ch.push(p[i]-p[i-1]);
+  var ag=0,al=0;
+  for(var i=0;i<n;i++){if(ch[i]>0)ag+=ch[i];else al+=Math.abs(ch[i]);}
+  ag/=n;al/=n;
+  for(var i=n;i<ch.length;i++){
+    var g=ch[i]>0?ch[i]:0,l=ch[i]<0?Math.abs(ch[i]):0;
+    ag=(ag*(n-1)+g)/n;al=(al*(n-1)+l)/n;
+  }
+  if(al===0)return 100;
+  return Math.round((100-100/(1+ag/al))*10)/10;
+}
+/**
+ * MA25の傾き（5日前比）を計算する
+ * 正=上向き、負=下向き、単位=%
+ */
+function calcSlope(ma25now, ma25_5dago){
+  if(ma25now==null||ma25_5dago==null||ma25_5dago===0) return null;
+  return ((ma25now - ma25_5dago) / ma25_5dago) * 100;
 }
 
 /**
- * チャート用データを配列から生成する
- * @param {number[]} closes  - 終値配列（古い順）
- * @param {string[]} dates   - 日付ラベル配列
- * @returns {object} チャートデータ
+ * ATR%（ボラティリティ）を計算する
+ * 終値の日次変動の平均絶対値（%）
  */
-function buildChartData(closes, dates) {
-  var n      = closes.length;
-  var labels = dates.slice(-30);      // 直近30日
-  var cls    = closes.slice(-30);
-
-  // MA5配列
-  var ma5arr = cls.map(function(_, i) {
-    if (i < 4) return null;
-    var sum = 0;
-    for (var j = i-4; j <= i; j++) sum += cls[j];
-    return sum / 5;
-  });
-
-  // MA25配列（30日分しかないので先頭はnull）
-  var ma25arr = cls.map(function(_, i) {
-    var idx = (n - 30) + i; // 元配列のインデックス
-    if (idx < 24) return null;
-    // 元のcloses配列から計算
-    var start = idx - 24;
-    var sum = 0;
-    for (var j = start; j <= idx; j++) sum += closes[j];
-    return sum / 25;
-  });
-
-  return { labels: labels, closes: cls, ma5arr: ma5arr, ma25arr: ma25arr };
-}
-
-/* =============================================
-   株価データ取得
-   ============================================= */
-async function fetchStockData(code) {
-  var ticker   = code + '.T';
-  var apiUrl   = 'https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?range=60d&interval=1d';
-  var proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(apiUrl);
-
-  try {
-    var res  = await fetch(proxyUrl);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    var json = await res.json();
-
-    var result = json && json.chart && json.chart.result && json.chart.result[0];
-    if (!result) throw new Error('データが見つかりません');
-
-    var closes  = (result.indicators.quote[0].close  || []).filter(function(v){ return v !== null && v !== undefined; });
-    var volumes = (result.indicators.quote[0].volume || []).filter(function(v){ return v !== null && v !== undefined; });
-    var timestamps = result.timestamp || [];
-    var meta    = result.meta;
-    var name    = meta.longName || meta.shortName || ticker;
-
-    if (closes.length < 26) throw new Error('データ不足（' + closes.length + '日分）');
-
-    // 日付ラベル生成
-    var dates = timestamps.slice(-60).map(function(ts) {
-      var d = new Date(ts * 1000);
-      return (d.getMonth()+1) + '/' + d.getDate();
-    });
-
-    // 指標計算
-    var currentPrice = closes[closes.length - 1];
-    var prevPrice    = closes[closes.length - 2];
-    var change       = currentPrice - prevPrice;
-    var changePct    = (change / prevPrice) * 100;
-
-    var ma5today  = calcMA(closes, 5,  0);
-    var ma5prev   = calcMA(closes, 5,  1);
-    var ma25today = calcMA(closes, 25, 0);
-    var ma25prev  = calcMA(closes, 25, 1);
-    var rsi       = calcRSI(closes, 14);
-    var latestVol = volumes[volumes.length - 1];
-
-    var signal = detectSignal(ma5today, ma5prev, ma25today, ma25prev, rsi);
-
-    // チャートデータを保存（後でチャートを開いたときに使う）
-    if (!window._chartData) window._chartData = {};
-    window._chartData[code] = buildChartData(closes, dates);
-
-    // チャートが開いていれば即描画
-    var area = document.getElementById('chartArea-'+code);
-    if (area && area.classList.contains('open')) {
-      drawChart(code, window._chartData[code]);
-    }
-
-    updateCard(code, { name: name, currentPrice: currentPrice, change: change,
-      changePct: changePct, ma5today: ma5today, ma25today: ma25today,
-      rsi: rsi, latestVol: latestVol, signal: signal });
-
-    if (signal === 'strong-gc' || signal === 'gc') {
-      var isStrong = signal === 'strong-gc';
-      showAlert(code, isStrong, rsi);
-      sendLineNotify(code, isStrong, rsi, currentPrice, ma5today, ma25today);
-    }
-
-  } catch(err) {
-    console.error('['+code+'] エラー:', err.message);
-    updateCardError(code, err.message);
+function calcATR(closes, period){
+  period=period||20;
+  if(closes.length<period+1) return null;
+  var changes=[];
+  var start=closes.length-period;
+  for(var i=start;i<closes.length;i++){
+    changes.push(Math.abs(closes[i]-closes[i-1])/closes[i-1]*100);
   }
+  var sum=0;for(var i=0;i<changes.length;i++)sum+=changes[i];
+  return Math.round(sum/changes.length*100)/100;
 }
-
-/* =============================================
-   指標計算
-   ============================================= */
-function calcMA(prices, period, offset) {
-  offset = offset || 0;
-  var end   = prices.length - 1 - offset;
-  var start = end - period + 1;
-  if (start < 0) return null;
-  var sum = 0;
-  for (var i = start; i <= end; i++) sum += prices[i];
-  return sum / period;
-}
-
-function calcRSI(prices, period) {
-  period = period || 14;
-  if (prices.length < period + 1) return null;
-  var changes = [];
-  for (var i = 1; i < prices.length; i++) changes.push(prices[i] - prices[i-1]);
-  var avgGain = 0, avgLoss = 0;
-  for (var i = 0; i < period; i++) {
-    if (changes[i] > 0) avgGain += changes[i];
-    else                avgLoss += Math.abs(changes[i]);
-  }
-  avgGain /= period; avgLoss /= period;
-  for (var i = period; i < changes.length; i++) {
-    var g = changes[i] > 0 ? changes[i] : 0;
-    var l = changes[i] < 0 ? Math.abs(changes[i]) : 0;
-    avgGain = (avgGain * (period-1) + g) / period;
-    avgLoss = (avgLoss * (period-1) + l) / period;
-  }
-  if (avgLoss === 0) return 100;
-  var rs = avgGain / avgLoss;
-  return Math.round((100 - 100/(1+rs)) * 10) / 10;
-}
-
-/* =============================================
-   シグナル判定
-   ============================================= */
-function detectSignal(ma5now, ma5prev, ma25now, ma25prev, rsi) {
-  if (ma5now == null || ma5prev == null || ma25now == null || ma25prev == null) return 'down';
-  if (ma5prev <= ma25prev && ma5now > ma25now) {
-    return (rsi !== null && rsi <= 50) ? 'strong-gc' : 'gc';
-  }
-  if (ma5prev >= ma25prev && ma5now < ma25now) return 'dc';
-  return ma5now > ma25now ? 'up' : 'down';
-}
-
-/* =============================================
-   ★ 自動銘柄スクリーナー
-   ============================================= */
 
 /**
- * スクリーナーを実行する
- * 対象銘柄を順番にスキャンし、条件に合う銘柄を表示する
+ * 直近N日の高値を更新しているか確認
  */
-async function startScreener() {
-  var btn = document.getElementById('screenerBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ スキャン中...';
+function checkNewHigh(closes, days){
+  days=days||20;
+  if(closes.length<days+1) return false;
+  var cur=closes[closes.length-1];
+  var past=closes.slice(-days-1,-1);
+  var maxPast=Math.max.apply(null,past);
+  return cur>maxPast;
+}
 
-  var condSGC    = document.getElementById('cond-sgc').checked;
-  var condGC     = document.getElementById('cond-gc').checked;
-  var condRSILow = document.getElementById('cond-rsi-low').checked;
-  var condUp     = document.getElementById('cond-up').checked;
+/**
+ * トレンドスコアを0〜10で計算する
+ * GC・RSI・MA25傾き・高値更新・出来高急増・ATRを総合評価
+ */
+function calcTrendScore(d){
+  var score=0;
+  var details=[];
+  // GCシグナル（最大3点）
+  if(d.sig==='strong-gc'){score+=3;details.push('強GC+3');}
+  else if(d.sig==='gc'){score+=2;details.push('GC+2');}
+  else if(d.sig==='up'){score+=1;details.push('上昇+1');}
+  // RSI（最大2点）
+  if(d.rsi!=null){
+    if(d.rsi>=40&&d.rsi<=60){score+=2;details.push('RSI適正+2');}
+    else if(d.rsi>=30&&d.rsi<=70){score+=1;details.push('RSI良好+1');}
+  }
+  // MA25傾き（最大2点）
+  if(d.slope!=null){
+    if(d.slope>0.5){score+=2;details.push('MA25急上昇+2');}
+    else if(d.slope>0){score+=1;details.push('MA25上向き+1');}
+  }
+  // 高値更新（1点）
+  if(d.isNewHigh){score+=1;details.push('高値更新+1');}
+  // 出来高急増（1点）
+  if(d.volSurge&&d.volSurge>=1.5){score+=1;details.push('出来高急増+1');}
+  // ATR低い=安定（1点）
+  if(d.atr!=null&&d.atr<2){score+=1;details.push('低ボラ+1');}
+  return{score:Math.min(score,10),details:details.join(' ')};
+}
 
-  if (!condSGC && !condGC && !condRSILow && !condUp) {
-    alert('条件を1つ以上選択してください');
-    btn.disabled = false;
-    btn.innerHTML = '🔍 スキャン開始';
-    return;
+function detectSignal(m5n,m5p,m25n,m25p,rsi){
+  if(m5n==null||m5p==null||m25n==null||m25p==null)return 'down';
+  if(m5p<=m25p&&m5n>m25n)return(rsi!=null&&rsi<=50)?'strong-gc':'gc';
+  if(m5p>=m25p&&m5n<m25n)return 'dc';
+  return m5n>m25n?'up':'down';
+}
+
+/* ===== カード更新 ===== */
+function updateCard(code,d){
+  setT('name-'+code, d.name);
+  setT('price-'+code,'¥'+fmt(d.cur));
+  var s=d.chg>=0?'+':'',cls=d.chg>0?'c-up':d.chg<0?'c-dn':'c-neu';
+  var cel=document.getElementById('change-'+code);
+  if(cel){cel.textContent=s+fmt(d.chg)+' ('+s+d.chgp.toFixed(2)+'%)';cel.className='price-chg '+cls;}
+  setT('ma5-'+code,'¥'+fmt(d.ma5));
+  setT('ma25-'+code,'¥'+fmt(d.ma25));
+  if(d.rsi!=null){
+    var re=document.getElementById('rsi-'+code),rf=document.getElementById('rsiFill-'+code);
+    if(re){re.textContent=d.rsi.toFixed(1);re.style.color=d.rsi<=30?'var(--green)':d.rsi>=70?'var(--red)':d.rsi<=50?'var(--gold)':'var(--neon)';}
+    if(rf){rf.style.width=Math.min(d.rsi,100)+'%';rf.style.background=d.rsi<=30?'var(--green)':d.rsi>=70?'var(--red)':d.rsi<=50?'linear-gradient(90deg,var(--gold),#ff9900)':'var(--neon)';}
+  }
+  setT('volume-'+code,fmtVol(d.vol));
+  var be=document.getElementById('badge-'+code);
+  if(be){var b=badgeInfo(d.sig);be.className='badge '+b.cls;be.textContent=b.lbl;}
+  var ce=document.getElementById('card-'+code);
+  if(ce)ce.className='card '+d.sig;
+  setT('updated-'+code,'更新: '+nowStr());
+
+  // ★ MA25傾き表示
+  if(d.slope!=null){
+    var sEl=document.getElementById('slope-'+code);
+    var sSub=document.getElementById('slope-sub-'+code);
+    if(sEl){
+      sEl.textContent=(d.slope>=0?'+':'')+d.slope.toFixed(2)+'%';
+      sEl.style.color=d.slope>0.5?'var(--green)':d.slope>0?'var(--neon)':d.slope<-0.5?'var(--red)':'var(--gold)';
+    }
+    if(sSub) sSub.textContent=d.slope>0.5?'急上昇↑':d.slope>0?'上向き↗':d.slope<-0.5?'急下降↓':'下向き↘';
   }
 
-  // 進捗バーを表示
-  var progress = document.getElementById('screenProgress');
-  var fill     = document.getElementById('screenProgressFill');
-  progress.style.display = 'block';
-  fill.style.width = '0%';
+  // ★ ATR%表示
+  if(d.atr!=null){
+    var aEl=document.getElementById('atr-'+code);
+    if(aEl){
+      aEl.textContent=d.atr.toFixed(2)+'%';
+      aEl.style.color=d.atr<1.5?'var(--green)':d.atr<3?'var(--neon)':d.atr<5?'var(--gold)':'var(--red)';
+    }
+  }
 
-  var results    = [];
-  var total      = SCREEN_CODES.length;
-  var scanned    = 0;
-  var statusEl   = document.getElementById('screenStatus');
-  var resultsDiv = document.getElementById('screenResults');
-  var listDiv    = document.getElementById('screenList');
+  // ★ トレンドスコア表示
+  if(d.tScore){
+    var tsEl=document.getElementById('tscore-'+code);
+    var tsFill=document.getElementById('tsfill-'+code);
+    var tsDet=document.getElementById('tsdetail-'+code);
+    var sc=d.tScore.score;
+    if(tsEl){
+      tsEl.textContent=sc;
+      tsEl.style.color=sc>=8?'var(--gold)':sc>=6?'var(--green)':sc>=4?'var(--neon)':'var(--gray)';
+    }
+    if(tsFill){
+      tsFill.style.width=(sc/10*100)+'%';
+      tsFill.style.background=sc>=8?'linear-gradient(90deg,var(--gold),#ff9900)':sc>=6?'var(--green)':sc>=4?'var(--neon)':'var(--gray)';
+    }
+    if(tsDet) tsDet.textContent=d.tScore.details||'---';
+  }
 
-  resultsDiv.style.display = 'block';
-  listDiv.innerHTML = '';
-  statusEl.textContent = 'スキャン中... 0 / ' + total;
+  // ★ 出来高急増バッジ
+  var volEl=document.getElementById('volume-'+code);
+  if(volEl&&d.vol&&d.volPrev&&d.volPrev>0){
+    var ratio=d.vol/d.volPrev;
+    // 既存バッジ除去
+    var existBadge=volEl.parentElement.querySelector('.vol-surge');
+    if(existBadge) existBadge.remove();
+    if(ratio>=2){
+      var badge=document.createElement('span');
+      badge.className='vol-surge';
+      badge.textContent='🔥 '+ratio.toFixed(1)+'倍';
+      volEl.after(badge);
+    }
+  }
+}
+function badgeInfo(sig){
+  var m={'strong-gc':{cls:'b-sgc',lbl:'🔥 強GC（RSI≤50）'},'gc':{cls:'b-gc',lbl:'✨ GC'},'dc':{cls:'b-dc',lbl:'💀 DC'},'up':{cls:'b-up',lbl:'↑ 上昇'},'down':{cls:'b-down',lbl:'↓ 下降'}};
+  return m[sig]||m['down'];
+}
+function cardErr(code,msg){
+  var b=document.getElementById('badge-'+code);
+  if(b){b.className='badge b-err';b.textContent='⚠ 取得失敗';}
+  setT('name-'+code,'エラー: '+msg.substring(0,20));
+  setT('updated-'+code,'失敗: '+nowStr());
+}
+function setT(id,t){var e=document.getElementById(id);if(e)e.textContent=t;}
 
-  // バッチサイズ：一度に5銘柄ずつ処理（APIに優しく）
-  var batchSize = 5;
-  for (var i = 0; i < SCREEN_CODES.length; i += batchSize) {
-    var batch = SCREEN_CODES.slice(i, i + batchSize);
-    await Promise.allSettled(batch.map(async function(code) {
-      try {
-        var data = await fetchForScreener(code);
-        if (!data) return;
-        var signal = detectSignal(data.ma5today, data.ma5prev, data.ma25today, data.ma25prev, data.rsi);
-
-        var match = false;
-        if (condSGC    && signal === 'strong-gc') match = true;
-        if (condGC     && (signal === 'gc' || signal === 'strong-gc')) match = true;
-        if (condRSILow && data.rsi !== null && data.rsi <= 30) match = true;
-        if (condUp     && signal === 'up') match = true;
-
-        if (match) {
-          results.push({ code: code, signal: signal, rsi: data.rsi, price: data.price });
-          renderScreenResult(code, signal, data.rsi, data.price, listDiv);
+/* ===== スクリーナー ===== */
+async function startScreener(){
+  var btn=document.getElementById('screenerBtn');
+  btn.disabled=true;btn.textContent='⏳ スキャン中...';
+  var cSGC=document.getElementById('cond-sgc').checked;
+  var cGC=document.getElementById('cond-gc').checked;
+  var cRL=document.getElementById('cond-rsi-low').checked;
+  var cUp=document.getElementById('cond-up').checked;
+  // 追加フィルター
+  var fVolSurge =document.getElementById('cond-vol-surge')&&document.getElementById('cond-vol-surge').checked;
+  var fVolMin   =document.getElementById('cond-vol-min')&&document.getElementById('cond-vol-min').checked;
+  var fMA25Up   =document.getElementById('cond-ma25-up')&&document.getElementById('cond-ma25-up').checked;
+  var fNewHigh  =document.getElementById('cond-new-high')&&document.getElementById('cond-new-high').checked;
+  if(!cSGC&&!cGC&&!cRL&&!cUp){alert('条件を1つ以上選択してください');btn.disabled=false;btn.textContent='🔍 スキャン開始';return;}
+  var targets=currentSector==='all'?ALL_CODES:(SECTORS[currentSector]||[]);
+  var prog=document.getElementById('screenProgress'),fill=document.getElementById('screenProgressFill');
+  prog.style.display='block';fill.style.width='0%';
+  var results=[],scanned=0,total=targets.length;
+  var statusEl=document.getElementById('screenStatus');
+  var resDiv=document.getElementById('screenResults'),listDiv=document.getElementById('screenList');
+  resDiv.style.display='block';listDiv.innerHTML='';
+  statusEl.textContent='スキャン中... 0 / '+total;
+  for(var i=0;i<targets.length;i+=5){
+    var batch=targets.slice(i,i+5);
+    await Promise.allSettled(batch.map(async function(code){
+      try{
+        var d=await fetchScreener(code);if(!d)return;
+        var sig=detectSignal(d.ma5t,d.ma5p,d.ma25t,d.ma25p,d.rsi);
+        var match=false;
+        if(cSGC&&sig==='strong-gc')match=true;
+        if(cGC&&(sig==='gc'||sig==='strong-gc'))match=true;
+        if(cRL&&d.rsi!=null&&d.rsi<=30)match=true;
+        if(cUp&&sig==='up')match=true;
+        // 追加フィルター（チェック時のみ適用）
+        if(match){
+          if(fVolSurge&&!(d.volRatio>=2)) match=false;          // 出来高2倍以上
+          if(fVolMin&&!(d.vol*d.price>=100000000)) match=false; // 売買代金1億以上
+          if(fMA25Up&&!(d.slope>0)) match=false;               // MA25上向き
+          if(fNewHigh&&!d.isNewHigh) match=false;              // 高値更新
         }
-      } catch(e) { /* スキップ */ }
+        if(match){results.push(code);renderResult(code,sig,d.rsi,d.price,listDiv);}
+      }catch(e){}
       scanned++;
     }));
-
-    // 進捗更新
-    var pct = Math.round((scanned / total) * 100);
-    fill.style.width = pct + '%';
-    statusEl.textContent = 'スキャン中... ' + scanned + ' / ' + total + '  ヒット: ' + results.length + ' 銘柄';
-
-    // APIレート制限回避のため少し待つ
-    await sleep(300);
+    fill.style.width=Math.round((scanned/total)*100)+'%';
+    statusEl.textContent='スキャン中... '+scanned+' / '+total+'　ヒット: '+results.length+' 銘柄';
+    await sleep(200);
   }
-
-  fill.style.width = '100%';
-  statusEl.textContent = '✅ スキャン完了！ ' + total + ' 銘柄中 ' + results.length + ' 銘柄がヒット';
-  if (results.length === 0) {
-    listDiv.innerHTML = '<span style="font-size:12px;color:var(--text-secondary)">条件に合う銘柄は見つかりませんでした</span>';
-  }
-  btn.disabled = false;
-  btn.innerHTML = '🔍 スキャン開始';
-  setTimeout(function(){ progress.style.display = 'none'; }, 1000);
+  fill.style.width='100%';
+  statusEl.textContent='✅ スキャン完了！ '+total+'銘柄中 '+results.length+'銘柄がヒット';
+  if(results.length===0)listDiv.innerHTML='<span style="font-size:12px;color:var(--gray)">条件に合う銘柄は見つかりませんでした</span>';
+  btn.disabled=false;btn.textContent='🔍 スキャン開始';
+  setTimeout(function(){prog.style.display='none';},1500);
 }
-
-/**
- * スクリーナー用の簡易データ取得（指標計算のみ）
- */
-async function fetchForScreener(code) {
-  var ticker   = code + '.T';
-  var apiUrl   = 'https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?range=60d&interval=1d';
-  var proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(apiUrl);
-  var res  = await fetch(proxyUrl);
-  if (!res.ok) return null;
-  var json = await res.json();
-  var result = json && json.chart && json.chart.result && json.chart.result[0];
-  if (!result) return null;
-  var closes = (result.indicators.quote[0].close || []).filter(function(v){ return v !== null && v !== undefined; });
-  if (closes.length < 26) return null;
-  return {
-    price:    closes[closes.length - 1],
-    ma5today: calcMA(closes, 5,  0),
-    ma5prev:  calcMA(closes, 5,  1),
-    ma25today:calcMA(closes, 25, 0),
-    ma25prev: calcMA(closes, 25, 1),
-    rsi:      calcRSI(closes, 14)
+async function fetchScreener(code){
+  var proxyUrl='https://corsproxy.io/?'+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+code+'.T?range=60d&interval=1d');
+  var res=await fetch(proxyUrl);if(!res.ok)return null;
+  var json=await res.json();
+  var result=json&&json.chart&&json.chart.result&&json.chart.result[0];if(!result)return null;
+  var closes=(result.indicators.quote[0].close||[]).filter(function(v){return v!=null;});
+  if(closes.length<26)return null;
+  var ma25t=calcMA(closes,25,0);
+  var ma25_5=calcMA(closes,25,5);
+  var vol=volumes[volumes.length-1]||0;
+  var volPrev=volumes[volumes.length-2]||1;
+  var price=closes[closes.length-1];
+  return{
+    price:price,
+    ma5t:calcMA(closes,5,0),ma5p:calcMA(closes,5,1),
+    ma25t:ma25t,ma25p:calcMA(closes,25,1),
+    rsi:calcRSI(closes,14),
+    slope:calcSlope(ma25t,ma25_5),
+    atr:calcATR(closes,20),
+    isNewHigh:checkNewHigh(closes,20),
+    vol:vol,volPrev:volPrev,
+    volRatio:volPrev>0?vol/volPrev:1
   };
 }
-
-/**
- * スクリーナー結果タグをDOMに追加する
- */
-function renderScreenResult(code, signal, rsi, price, container) {
-  var badgeInfo = getBadgeInfo(signal);
-  var tag = document.createElement('div');
-  tag.className = 'screen-tag';
-  tag.title     = '監視リストに追加';
-  tag.innerHTML = '<span class="tag-add">＋</span>'
-    + '<span style="font-weight:700">' + code + '</span>'
-    + '<span style="font-size:10px;color:var(--text-secondary)">¥' + fmt(price) + '</span>'
-    + '<span class="sig ' + badgeInfo.cls + '" style="font-size:9px;padding:2px 6px">' + badgeInfo.label + '</span>'
-    + (rsi !== null ? '<span style="font-size:9px;color:var(--accent-gold)">RSI:' + rsi + '</span>' : '');
-  tag.onclick = function() {
-    addPreset(code);
-    tag.style.opacity = '0.4';
-    tag.style.pointerEvents = 'none';
-    tag.querySelector('.tag-add').textContent = '✓';
-  };
+function renderResult(code,sig,rsi,price,container){
+  var b=badgeInfo(sig);
+  var tag=document.createElement('div');
+  tag.className='result-tag';
+  tag.innerHTML='<span style="font-size:14px;font-weight:900">＋</span><strong>'+code+'</strong>'
+    +'<span style="color:var(--off-white)">¥'+fmt(price)+'</span>'
+    +'<span class="badge '+b.cls+'" style="font-size:9px;padding:2px 7px">'+b.lbl+'</span>'
+    +(rsi!=null?'<span style="color:var(--gold);font-size:10px">RSI:'+rsi+'</span>':'');
+  tag.onclick=function(){addPreset(code);tag.style.opacity='0.5';tag.style.pointerEvents='none';};
   container.appendChild(tag);
 }
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
 
-function sleep(ms) {
-  return new Promise(function(resolve){ setTimeout(resolve, ms); });
+/* ===== 一括更新 ===== */
+async function refreshAll(){
+  var btn=document.getElementById('refreshBtn'),icon=document.getElementById('refreshIcon');
+  btn.disabled=true;icon.textContent='⏳';
+  await Promise.allSettled(watchList.map(function(c){return fetchStockData(c);}));
+  btn.disabled=false;icon.textContent='↺';timerRemaining=AUTO_SEC;
 }
-
-/* =============================================
-   カード更新
-   ============================================= */
-function updateCard(code, d) {
-  setText('name-'+code, d.name);
-  setText('price-'+code, '¥'+fmt(d.currentPrice));
-
-  var sign = d.change >= 0 ? '+' : '';
-  var cls  = d.change > 0 ? 'pos' : d.change < 0 ? 'neg' : 'neu';
-  var chEl = document.getElementById('change-'+code);
-  if (chEl) {
-    chEl.textContent = sign+fmt(d.change)+' ('+sign+d.changePct.toFixed(2)+'%)';
-    chEl.className   = 'price-change '+cls;
-  }
-
-  setText('ma5-'+code,  '¥'+fmt(d.ma5today));
-  setText('ma25-'+code, '¥'+fmt(d.ma25today));
-
-  if (d.rsi !== null) {
-    var rsiEl   = document.getElementById('rsi-'+code);
-    var rsiFill = document.getElementById('rsiFill-'+code);
-    if (rsiEl) {
-      rsiEl.textContent = d.rsi.toFixed(1);
-      rsiEl.style.color = d.rsi <= 30 ? 'var(--accent-green)' : d.rsi >= 70 ? 'var(--accent-red)' : d.rsi <= 50 ? 'var(--accent-gold)' : 'var(--accent-blue)';
-    }
-    if (rsiFill) {
-      rsiFill.style.width      = Math.min(d.rsi, 100) + '%';
-      rsiFill.style.background = d.rsi <= 30 ? 'var(--accent-green)' : d.rsi >= 70 ? 'var(--accent-red)' : d.rsi <= 50 ? 'linear-gradient(90deg,var(--accent-gold),var(--accent-orange))' : 'var(--accent-blue)';
-    }
-  }
-
-  setText('volume-'+code, fmtVolume(d.latestVol));
-
-  var badgeEl = document.getElementById('badge-'+code);
-  if (badgeEl) {
-    var b = getBadgeInfo(d.signal);
-    badgeEl.className   = 'sig ' + b.cls;
-    badgeEl.textContent = b.label;
-  }
-
-  var cardEl = document.getElementById('card-'+code);
-  if (cardEl) cardEl.className = 'stock-card ' + d.signal;
-
-  setText('updated-'+code, '更新: '+nowStr());
-}
-
-function getBadgeInfo(signal) {
-  var map = {
-    'strong-gc': { cls:'sig-sgc', label:'🔥 強GC（RSI≤50）' },
-    'gc':        { cls:'sig-gc',  label:'✨ GC' },
-    'dc':        { cls:'sig-dc',  label:'💀 DC' },
-    'up':        { cls:'sig-up',  label:'↑ 上昇' },
-    'down':      { cls:'sig-down',label:'↓ 下降' }
-  };
-  return map[signal] || map['down'];
-}
-
-function updateCardError(code, msg) {
-  var b = document.getElementById('badge-'+code);
-  if (b) { b.className = 'sig sig-err'; b.textContent = '⚠ 取得失敗'; }
-  setText('name-'+code,    'エラー: '+msg);
-  setText('updated-'+code, '失敗: '+nowStr());
-}
-
-function setText(id, text) {
-  var el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
-
-/* =============================================
-   一括更新
-   ============================================= */
-async function refreshAll() {
-  var btn  = document.getElementById('refreshBtn');
-  var icon = document.getElementById('refreshIcon');
-  btn.disabled     = true;
-  icon.textContent = '⏳';
-  await Promise.allSettled(watchList.map(function(c){ return fetchStockData(c); }));
-  btn.disabled     = false;
-  icon.textContent = '🔄';
-  timerRemaining   = AUTO_SEC;
-}
-
-/* =============================================
-   カウントダウン
-   ============================================= */
-function startCountdown() {
-  setInterval(function() {
+function startCountdown(){
+  setInterval(function(){
     timerRemaining--;
-    var m = String(Math.floor(timerRemaining/60)).padStart(2,'0');
-    var s = String(timerRemaining%60).padStart(2,'0');
-    var el = document.getElementById('timerDisplay');
-    if (el) el.textContent = m+':'+s;
-    if (timerRemaining <= 0) { timerRemaining = AUTO_SEC; refreshAll(); }
-  }, 1000);
+    var m=String(Math.floor(timerRemaining/60)).padStart(2,'0');
+    var s=String(timerRemaining%60).padStart(2,'0');
+    var el=document.getElementById('timerDisplay');if(el)el.textContent=m+':'+s;
+    if(timerRemaining<=0){timerRemaining=AUTO_SEC;refreshAll();}
+  },1000);
 }
 
-/* =============================================
-   アラートバナー
-   ============================================= */
-function showAlert(code, isStrong, rsi) {
-  var banner = document.getElementById('alertBanner');
-  var title  = document.getElementById('alertTitle');
-  var body   = document.getElementById('alertBody');
-  if (isStrong) {
-    title.textContent = '🔥 強シグナル検知！ '+code;
-    body.textContent  = 'GC + RSI '+rsi+'（≤50）。売られ過ぎ圏からの反転の可能性あり';
-  } else {
-    title.textContent = '✨ ゴールデンクロス検知！ '+code;
-    body.textContent  = 'MA5がMA25を上抜け。RSI '+rsi+'（>50 = 過熱圏注意）';
-  }
-  banner.classList.add('active');
-  if (alertTimeout) clearTimeout(alertTimeout);
-  alertTimeout = setTimeout(closeAlert, 9000);
+/* ===== アラート ===== */
+function showAlert(code,isStrong,rsi){
+  var b=document.getElementById('alertBanner');
+  document.getElementById('alertTitle').textContent=isStrong?'🔥 強シグナル検知！ '+code:'✨ ゴールデンクロス検知！ '+code;
+  document.getElementById('alertBody').textContent=isStrong?'GC + RSI '+rsi+'（≤50）売られ過ぎ圏からの反転の可能性あり':'MA5がMA25を上抜け。RSI '+rsi+'（>50は過熱圏注意）';
+  b.classList.add('on');
+  if(alertTimeout)clearTimeout(alertTimeout);
+  alertTimeout=setTimeout(closeAlert,9000);
 }
-function closeAlert() {
-  document.getElementById('alertBanner').classList.remove('active');
+function closeAlert(){document.getElementById('alertBanner').classList.remove('on');}
+
+/* ===== LINE ===== */
+async function sendLine(code,isStrong,rsi,price,ma5,ma25){
+  var url=document.getElementById('lineWebhookUrl').value.trim();if(!url)return;
+  var msg='\n'+(isStrong?'🔥【強シグナル GC+RSI≤50】':'✨【GC検知】')+'\n銘柄: '+code+'.T\nRSI: '+rsi+'\n価格: ¥'+fmt(price)+'\nMA5: ¥'+fmt(ma5)+' / MA25: ¥'+fmt(ma25);
+  try{await fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'message='+encodeURIComponent(msg)});}catch(e){}
+}
+async function testLineNotify(){
+  var url=document.getElementById('lineWebhookUrl').value.trim();
+  if(!url){alert('URL を入力してください');return;}
+  localStorage.setItem('lineWebhookUrl',url);lineWebhookUrl=url;
+  await sendLine('TEST',true,42,2500,2480,2510);alert('テスト送信しました');
 }
 
-/* =============================================
-   LINE Notify
-   ============================================= */
-async function sendLineNotify(code, isStrong, rsi, price, ma5, ma25) {
-  var url = document.getElementById('lineWebhookUrl').value.trim();
-  if (!url) return;
-  var emoji = isStrong ? '🔥' : '✨';
-  var label = isStrong ? '【強シグナル GC+RSI≤50】' : '【ゴールデンクロス】';
-  var msg = '\n'+emoji+label+'\n銘柄: '+code+'.T\nRSI: '+rsi+'\n価格: ¥'+fmt(price)+'\nMA5: ¥'+fmt(ma5)+' / MA25: ¥'+fmt(ma25);
-  try {
-    await fetch(url, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'message='+encodeURIComponent(msg) });
-  } catch(e) { console.warn('[LINE] 送信失敗:', e.message); }
-}
-async function testLineNotify() {
-  var url = document.getElementById('lineWebhookUrl').value.trim();
-  if (!url) { alert('Webhook URL を入力してください'); return; }
-  localStorage.setItem('lineWebhookUrl', url);
-  lineWebhookUrl = url;
-  await sendLineNotify('TEST', true, 42, 2500, 2480, 2510);
-  alert('テスト送信しました');
-}
-
-/* =============================================
-   ユーティリティ
-   ============================================= */
-function fmt(n) {
-  if (n == null || isNaN(n)) return '---';
-  return Number(n).toLocaleString('ja-JP', {maximumFractionDigits:1});
-}
-function fmtVolume(v) {
-  if (v == null || isNaN(v)) return '---';
-  if (v >= 100000000) return (v/100000000).toFixed(2)+' 億株';
-  if (v >= 10000)     return Math.round(v/10000).toLocaleString()+' 万株';
+/* ===== ユーティリティ ===== */
+function fmt(n){if(n==null||isNaN(n))return'---';return Number(n).toLocaleString('ja-JP',{maximumFractionDigits:1});}
+function fmtVol(v){
+  if(v==null||isNaN(v))return'---';
+  if(v>=100000000)return(v/100000000).toFixed(2)+' 億株';
+  if(v>=10000)return Math.round(v/10000).toLocaleString()+' 万株';
   return v.toLocaleString()+' 株';
 }
-function nowStr() {
-  return new Date().toLocaleTimeString('ja-JP');
-}
+function nowStr(){return new Date().toLocaleTimeString('ja-JP');}
 </script>
 
 </body>
