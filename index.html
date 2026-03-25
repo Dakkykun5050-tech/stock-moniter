@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔔 日本株 クロス検知ツール</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =============================================
+       CSS カスタム変数
+       ============================================= */
+    :root {
+      --bg-base:        #0a0e17;
+      --bg-panel:       #0f1623;
+      --bg-card:        #141c2e;
+      --bg-card-hover:  #1a2540;
+      --bg-input:       #0c1220;
+      --border:         #1e2d4a;
+      --border-bright:  #2a4070;
+      --accent-gold:    #f0b429;
+      --accent-green:   #00e5a0;
+      --accent-red:     #ff4d6d;
+      --accent-blue:    #4d9eff;
+      --accent-orange:  #ff8c42;
+      --text-primary:   #e8f0ff;
+      --text-secondary: #6a85b0;
+      --text-mono:      #a0c0ff;
+      --glow-gold:      0 0 24px rgba(240,180,41,0.5);
+      --glow-green:     0 0 24px rgba(0,229,160,0.4);
+      --glow-red:       0 0 24px rgba(255,77,109,0.4);
+      --radius:         12px;
+      --transition:     0.25s ease;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Safari のinput/buttonデフォルトスタイルをリセット */
+    input, button { -webkit-appearance: none; appearance: none; }
+    input[type="text"] { border-radius: 8px; }
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      background-image:
+        linear-gradient(rgba(77,158,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(77,158,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ヘッダー */
+    header {
+      background: linear-gradient(135deg, #0f1623 0%, #0a1428 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .header-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { font-size: 22px; animation: pulse-icon 2s infinite; }
+    @keyframes pulse-icon { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
+    .logo-text {
+      font-family: 'Share Tech Mono', monospace; font-size: 17px;
+      color: var(--accent-gold); letter-spacing: 2px; text-shadow: var(--glow-gold);
+    }
+    .logo-sub { font-size: 11px; color: var(--text-secondary); letter-spacing: 1px; }
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .auto-timer {
+      font-family: 'Share Tech Mono', monospace; font-size: 12px;
+      color: var(--text-secondary); background: var(--bg-input);
+      border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px;
+    }
+    .auto-timer span { color: var(--accent-blue); font-weight: bold; }
+
+    /* ボタン共通 */
+    .btn {
+      font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 700;
+      border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer;
+      transition: all var(--transition); display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #1a4fd6, #0e3aac); color: #fff;
+      border: 1px solid #2a5fe0; box-shadow: 0 0 12px rgba(26,79,214,0.4);
+    }
+    .btn-primary:hover { background: linear-gradient(135deg,#2a5fe0,#1a4fd6); transform: translateY(-1px); }
+    .btn-success {
+      background: linear-gradient(135deg, #00a070, #007050); color: #fff;
+      border: 1px solid #00c088; box-shadow: 0 0 12px rgba(0,160,112,0.4);
+    }
+    .btn-success:hover { background: linear-gradient(135deg,#00c090,#00a070); transform: translateY(-1px); }
+    .btn-danger {
+      background: rgba(255,77,109,0.15); color: var(--accent-red);
+      border: 1px solid rgba(255,77,109,0.4);
+    }
+    .btn-danger:hover { background: rgba(255,77,109,0.25); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    /* メイン */
+    main { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+
+    /* 銘柄追加パネル */
+    .add-panel {
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .add-panel::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+    }
+    .add-panel-title {
+      font-size: 11px; color: var(--text-secondary); letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 14px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .add-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .input-wrap { flex: 1; min-width: 160px; max-width: 260px; }
+    .input-wrap label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; letter-spacing: 1px; }
+    .stock-input {
+      width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+      color: var(--text-primary); font-family: 'Share Tech Mono', monospace;
+      font-size: 18px; padding: 10px 14px; border-radius: 8px; outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      letter-spacing: 4px;
+    }
+    .stock-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 12px rgba(77,158,255,0.3); }
+    .stock-input::placeholder { color: var(--text-secondary); letter-spacing: 1px; font-size: 14px; }
+    .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+    .preset-btn {
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      color: var(--text-secondary); padding: 4px 10px; border-radius: 5px;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .preset-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+
+    /* =============================================
+       シグナル説明レジェンド（★ 新規追加）
+       ============================================= */
+    .signal-legend {
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 18px; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .signal-legend::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+    }
+    .legend-title {
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      color: var(--text-secondary); letter-spacing: 2px; margin-bottom: 12px;
+    }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+    }
+    .legend-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px;
+    }
+    /* 強シグナルのアイテムは特別なボーダー */
+    .legend-item.strong {
+      border-color: rgba(240,180,41,0.4);
+      background: rgba(240,180,41,0.05);
+    }
+    .legend-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 9px;
+      border-radius: 5px; white-space: nowrap; flex-shrink: 0;
+    }
+    .legend-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+    .legend-desc strong { color: var(--text-primary); }
+
+    /* LINE Webhook */
+    .webhook-section {
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .webhook-section::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, #06c755, transparent);
+    }
+    .webhook-label {
+      font-size: 11px; color: var(--text-secondary); letter-spacing: 2px;
+      text-transform: uppercase; font-family: 'Share Tech Mono', monospace; margin-bottom: 10px;
+    }
+    .webhook-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .webhook-input {
+      flex: 1; min-width: 200px; background: var(--bg-input);
+      border: 1px solid var(--border); color: var(--text-primary);
+      font-family: 'Share Tech Mono', monospace; font-size: 12px;
+      padding: 8px 12px; border-radius: 7px; outline: none;
+    }
+    .webhook-input:focus { border-color: #06c755; }
+    .btn-line {
+      background: linear-gradient(135deg, #06c755, #059a44); color: #fff;
+      border: none; border-radius: 8px; padding: 8px 16px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all var(--transition); display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-line:hover { transform: translateY(-1px); box-shadow: 0 0 16px rgba(6,199,85,0.4); }
+
+    /* 監視リスト */
+    .watch-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; gap: 10px; flex-wrap: wrap;
+    }
+    .watch-title { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text-secondary); letter-spacing: 2px; }
+    .watch-count {
+      background: var(--bg-input); border: 1px solid var(--border);
+      color: var(--accent-blue); font-family: 'Share Tech Mono', monospace;
+      font-size: 11px; padding: 3px 10px; border-radius: 10px;
+    }
+    .cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;
+    }
+
+    /* =============================================
+       銘柄カード
+       ============================================= */
+    .stock-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px;
+      position: relative; overflow: hidden;
+      transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+      animation: fadeInCard 0.4s ease;
+    }
+    @keyframes fadeInCard { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .stock-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); }
+
+    /* カード上部ライン（シグナルで変わる） */
+    .stock-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--border-bright); transition: background var(--transition);
+    }
+
+    /* 通常ゴールデンクロス */
+    .stock-card.gc::before  { background: linear-gradient(90deg, var(--accent-green), #00ffaa); }
+    .stock-card.gc          { border-color: rgba(0,229,160,0.3); box-shadow: var(--glow-green); }
+
+    /* ★ 強シグナル（GC + RSI≤50）: 金色グロー */
+    .stock-card.strong-gc::before {
+      background: linear-gradient(90deg, var(--accent-gold), #ffe066, var(--accent-orange), var(--accent-gold));
+      background-size: 200% auto;
+      animation: shimmer-bar 2.5s linear infinite;
+    }
+    @keyframes shimmer-bar { 0%{background-position:0% center} 100%{background-position:200% center} }
+    .stock-card.strong-gc {
+      border-color: rgba(240,180,41,0.55);
+      box-shadow: var(--glow-gold), 0 0 40px rgba(240,180,41,0.15);
+    }
+
+    /* デッドクロス */
+    .stock-card.dc::before  { background: linear-gradient(90deg, var(--accent-red), #ff9999); }
+    .stock-card.dc          { border-color: rgba(255,77,109,0.35); box-shadow: var(--glow-red); }
+
+    /* 上昇・下降トレンド */
+    .stock-card.up::before  { background: linear-gradient(90deg, #1a3d6a, #2a5fee); }
+    .stock-card.down::before{ background: linear-gradient(90deg, #2a0e1a, #7a1a3a); }
+
+    /* カードヘッダー */
+    .card-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 14px; gap: 8px;
+    }
+    .card-code {
+      font-family: 'Share Tech Mono', monospace; font-size: 22px;
+      color: var(--text-primary); letter-spacing: 3px; line-height: 1.1;
+    }
+    .card-name { font-size: 11px; color: var(--text-secondary); margin-top: 3px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-actions { display: flex; gap: 6px; align-items: center; }
+
+    /* シグナルバッジ */
+    .signal-badge {
+      font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+      white-space: nowrap; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;
+    }
+    .badge-gc     { background: rgba(0,229,160,0.15); color: var(--accent-green); border: 1px solid rgba(0,229,160,0.4); }
+    /* ★ 強シグナルバッジ：脈打つ金色 */
+    .badge-strong-gc {
+      background: linear-gradient(135deg, rgba(240,180,41,0.2), rgba(255,140,66,0.15));
+      color: var(--accent-gold);
+      border: 1px solid rgba(240,180,41,0.65);
+      box-shadow: var(--glow-gold);
+      animation: badge-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%,100% { box-shadow: 0 0 8px rgba(240,180,41,0.4); }
+      50%      { box-shadow: 0 0 22px rgba(240,180,41,0.75); }
+    }
+    .badge-dc     { background: rgba(255,77,109,0.15); color: var(--accent-red);   border: 1px solid rgba(255,77,109,0.4); }
+    .badge-up     { background: rgba(77,158,255,0.12); color: var(--accent-blue);  border: 1px solid rgba(77,158,255,0.3); }
+    .badge-down   { background: rgba(106,133,176,0.1); color: var(--text-secondary); border: 1px solid var(--border); }
+    .badge-load   { background: rgba(77,158,255,0.08); color: var(--text-secondary); border: 1px solid var(--border); }
+    .badge-err    { background: rgba(255,77,109,0.1);  color: var(--accent-red);   border: 1px solid rgba(255,77,109,0.3); }
+
+    /* 株価行 */
+    .card-price-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+    .price-main { font-family: 'Share Tech Mono', monospace; font-size: 30px; color: var(--text-primary); letter-spacing: 1px; }
+    .price-change { font-family: 'Share Tech Mono', monospace; font-size: 14px; }
+    .price-change.pos { color: var(--accent-green); }
+    .price-change.neg { color: var(--accent-red); }
+    .price-change.neu { color: var(--text-secondary); }
+
+    /* 指標グリッド */
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .metric-cell {
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 12px;
+    }
+    .metric-label { font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+    .metric-value { font-family: 'Share Tech Mono', monospace; font-size: 15px; color: var(--text-mono); }
+
+    /* RSIバー（★ 50ラインを黄金色で強調） */
+    .rsi-bar-wrap {
+      grid-column: 1 / -1; background: var(--bg-input);
+      border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px;
+    }
+    .rsi-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+    .rsi-bar-label { font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; }
+    .rsi-bar-value { font-family: 'Share Tech Mono', monospace; font-size: 15px; }
+    .rsi-track {
+      height: 7px; background: rgba(255,255,255,0.04); border-radius: 4px;
+      overflow: hidden; position: relative;
+    }
+    .rsi-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease, background 0.4s ease; }
+    /* ★ 50ラインマーカー（強シグナル判定境界） */
+    .rsi-track::after {
+      content: ''; position: absolute; top: -2px; bottom: -2px;
+      left: 50%; width: 2px; margin-left: -1px;
+      background: var(--accent-gold);
+      opacity: 0.75;
+    }
+    .rsi-hint { font-size: 10px; color: var(--text-secondary); margin-top: 5px; display: flex; justify-content: space-between; }
+    .rsi-hint .threshold { color: var(--accent-gold); font-weight: 700; }
+
+    /* 出来高 */
+    .volume-cell {
+      grid-column: 1 / -1; background: var(--bg-input);
+      border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px;
+    }
+    .volume-header { display: flex; justify-content: space-between; align-items: center; }
+    .volume-label { font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; }
+    .volume-value { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--accent-blue); }
+
+    /* カードフッター */
+    .card-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .card-updated { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-secondary); }
+
+    /* =============================================
+       強シグナル アラートバナー（★ 新規追加）
+       ============================================= */
+    .alert-banner {
+      display: none;
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #1c1500, #2a1e00);
+      border: 2px solid var(--accent-gold); border-radius: 14px;
+      padding: 16px 22px; z-index: 9999;
+      box-shadow: var(--glow-gold), 0 8px 32px rgba(0,0,0,0.6);
+      max-width: 90vw; min-width: 300px;
+      animation: slideUp 0.4s ease;
+    }
+    @keyframes slideUp {
+      from { opacity:0; transform: translateX(-50%) translateY(20px); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0); }
+    }
+    .alert-banner.active { display: flex; align-items: center; gap: 14px; }
+    .alert-icon { font-size: 28px; animation: pulse-icon 1s infinite; }
+    .alert-title { font-size: 14px; font-weight: 700; color: var(--accent-gold); margin-bottom: 3px; }
+    .alert-body { font-size: 12px; color: var(--text-secondary); }
+    .alert-close {
+      margin-left: auto; background: none; border: none;
+      color: var(--text-secondary); cursor: pointer; font-size: 18px;
+      padding: 4px; line-height: 1; transition: color var(--transition);
+    }
+    .alert-close:hover { color: var(--text-primary); }
+
+    /* 空状態 */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+    .empty-icon  { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-text  { font-size: 14px; line-height: 1.9; }
+
+    /* スピナー */
+    .spinner {
+      display: inline-block; width: 13px; height: 13px;
+      border: 2px solid var(--border); border-top-color: var(--accent-blue);
+      border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* スマホ対応 */
+    @media (max-width: 480px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .price-main { font-size: 26px; }
+      .card-code  { font-size: 19px; }
+      .legend-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+
+</head>
+<body>
+
+<!-- ヘッダー -->
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">📡</span>
+      <div>
+        <div class="logo-text">CROSS SCANNER</div>
+        <div class="logo-sub">日本株 ゴールデン/デッドクロス 強シグナル検知</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="auto-timer">AUTO <span id="timerDisplay">5:00</span></div>
+      <button class="btn btn-primary" onclick="refreshAll()" id="refreshBtn">
+        <span id="refreshIcon">🔄</span> 全更新
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ① 銘柄追加パネル -->
+
+  <div class="add-panel">
+    <div class="add-panel-title">▸ 銘柄を追加（東証4桁）</div>
+    <div class="add-form">
+      <div class="input-wrap">
+        <label>銘柄コード</label>
+        <input type="text" id="codeInput" class="stock-input"
+          maxlength="4" placeholder="例: 7203" inputmode="numeric"
+          onkeydown="if(event.key==='Enter') addStock()" />
+      </div>
+      <button class="btn btn-success" onclick="addStock()" style="align-self:flex-end;padding:10px 20px;">
+        ＋ 追加
+      </button>
+    </div>
+    <div class="presets">
+      <span style="font-size:11px;color:var(--text-secondary);align-self:center;">人気銘柄：</span>
+      <button class="preset-btn" onclick="addPreset('7203')">7203 トヨタ</button>
+      <button class="preset-btn" onclick="addPreset('6758')">6758 ソニー</button>
+      <button class="preset-btn" onclick="addPreset('9984')">9984 SBG</button>
+      <button class="preset-btn" onclick="addPreset('6861')">6861 キーエンス</button>
+      <button class="preset-btn" onclick="addPreset('8306')">8306 三菱UFJ</button>
+      <button class="preset-btn" onclick="addPreset('4063')">4063 信越化学</button>
+    </div>
+  </div>
+
+  <!-- ② シグナル判定ロジック説明（★ 今回の追加） -->
+
+  <div class="signal-legend">
+    <div class="legend-title">▸ シグナル判定ロジック</div>
+    <div class="legend-grid">
+
+```
+  <!-- 強シグナル -->
+  <div class="legend-item strong">
+    <span class="signal-badge badge-strong-gc legend-badge">🔥 強GC</span>
+    <div class="legend-desc">
+      <strong>ゴールデンクロス + RSI ≤ 50</strong><br>
+      売られ過ぎ圏（RSI50以下）からの底打ち反転。
+      過熱感がない分、上値余地が大きい高精度シグナル。
+    </div>
+  </div>
+
+  <!-- 通常GC -->
+  <div class="legend-item">
+    <span class="signal-badge badge-gc legend-badge">✨ GC</span>
+    <div class="legend-desc">
+      <strong>ゴールデンクロス + RSI ＞ 50</strong><br>
+      前日MA5≤MA25 → 当日MA5＞MA25。
+      クロスは発生しているが、RSI過熱圏（＞50）のため追随注意。
+    </div>
+  </div>
+
+  <!-- DC -->
+  <div class="legend-item">
+    <span class="signal-badge badge-dc legend-badge">💀 DC</span>
+    <div class="legend-desc">
+      <strong>デッドクロス</strong><br>
+      前日MA5≥MA25 → 当日MA5＜MA25。
+      下降転換の売りシグナル。
+    </div>
+  </div>
+
+  <!-- UP / DOWN -->
+  <div class="legend-item">
+    <span class="signal-badge badge-up legend-badge">↑ 上昇</span>
+    <div class="legend-desc">
+      MA5 ＞ MA25（上昇トレンド継続中・クロスなし）
+    </div>
+  </div>
+  <div class="legend-item">
+    <span class="signal-badge badge-down legend-badge">↓ 下降</span>
+    <div class="legend-desc">
+      MA5 ＜ MA25（下降トレンド継続中・クロスなし）
+    </div>
+  </div>
+
+</div>
+```
+
+  </div>
+
+  <!-- ③ LINE Notify 設定 -->
+
+  <div class="webhook-section">
+    <div class="webhook-label">▸ LINE 通知設定（オプション）</div>
+    <div class="webhook-row">
+      <input type="text" id="lineWebhookUrl" class="webhook-input"
+        placeholder="https://notify-api.line.me/api/notify  ← LINE Notify URLを貼り付け" />
+      <button class="btn-line" onclick="testLineNotify()">📲 テスト送信</button>
+    </div>
+  </div>
+
+  <!-- ④ 監視リスト -->
+
+  <div class="watch-header">
+    <div class="watch-title">▸ 監視リスト</div>
+    <span class="watch-count" id="watchCount">0 銘柄</span>
+  </div>
+
+  <div class="cards-grid" id="cardsGrid">
+    <div class="empty-state" id="emptyState" style="grid-column:1/-1;">
+      <div class="empty-icon">🔭</div>
+      <div class="empty-text">
+        銘柄コードを入力して「＋ 追加」を押してください<br />
+        上のショートカットから人気銘柄をすぐに追加できます
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- =============================================
+     強シグナル アラートバナー（画面下部固定）
+     ============================================= -->
+
+<div class="alert-banner" id="alertBanner">
+  <div class="alert-icon">🔥</div>
+  <div>
+    <div class="alert-title" id="alertTitle"></div>
+    <div class="alert-body"  id="alertBody"></div>
+  </div>
+  <button class="alert-close" onclick="closeAlert()">✕</button>
+</div>
+
+<!-- =============================================
+     JavaScript
+     ============================================= -->
+
+<script>
+/* =============================================
+   Promise.allSettled ポリフィル（Safari 12以下対応）
+   ============================================= */
+if (!Promise.allSettled) {
+  Promise.allSettled = function(promises) {
+    return Promise.all(promises.map(function(p) {
+      return Promise.resolve(p).then(
+        function(v) { return { status: 'fulfilled', value: v }; },
+        function(e) { return { status: 'rejected',  reason: e }; }
+      );
+    }));
+  };
+}
+
+/* =============================================
+   グローバル状態
+   ============================================= */
+let watchList       = JSON.parse(localStorage.getItem('watchList') || '[]');
+let lineWebhookUrl  = localStorage.getItem('lineWebhookUrl') || '';
+const AUTO_REFRESH_SEC = 300; // 5分
+let timerRemaining  = AUTO_REFRESH_SEC;
+let countdownTimer  = null;
+let alertTimeout    = null;
+
+
+/* =============================================
+   初期化
+   ============================================= */
+window.addEventListener('DOMContentLoaded', () => {
+  // LINE URL復元
+  if (lineWebhookUrl) document.getElementById('lineWebhookUrl').value = lineWebhookUrl;
+  // 保存済み銘柄カードを描画
+  renderAllCards();
+  // 自動更新カウントダウン開始
+  startCountdown();
+  // 初回データ取得
+  if (watchList.length > 0) refreshAll();
+});
+
+
+/* =============================================
+   銘柄の追加 / 削除
+   ============================================= */
+
+/** 入力欄から銘柄を追加 */
+function addStock() {
+  const input = document.getElementById('codeInput');
+  const code  = input.value.trim().replace(/\D/g, ''); // 数字のみ
+  if (code.length !== 4) { flashInputError('4桁の数字を入力してください'); return; }
+  if (watchList.includes(code)) { flashInputError(`${code} は登録済みです`); return; }
+  watchList.push(code);
+  saveWatchList();
+  input.value = '';
+  addCard(code);
+  fetchStockData(code);
+}
+
+/** プリセットから銘柄を追加 */
+function addPreset(code) {
+  if (watchList.includes(code)) return;
+  watchList.push(code);
+  saveWatchList();
+  addCard(code);
+  fetchStockData(code);
+}
+
+/** 銘柄を削除 */
+function removeStock(code) {
+  watchList = watchList.filter(c => c !== code);
+  saveWatchList();
+  const el = document.getElementById(`card-${code}`);
+  if (el) {
+    el.style.transition = 'all 0.3s ease';
+    el.style.opacity    = '0';
+    el.style.transform  = 'scale(0.93)';
+    setTimeout(() => el.remove(), 300);
+  }
+  updateEmptyState();
+  updateWatchCount();
+}
+
+/** watchList を保存 */
+function saveWatchList() {
+  localStorage.setItem('watchList', JSON.stringify(watchList));
+  updateWatchCount();
+}
+
+/** 件数バッジ更新 */
+function updateWatchCount() {
+  document.getElementById('watchCount').textContent = `${watchList.length} 銘柄`;
+}
+
+/** 空状態の表示切り替え */
+function updateEmptyState() {
+  document.getElementById('emptyState').style.display = watchList.length === 0 ? 'block' : 'none';
+}
+
+/** 入力欄のエラーフラッシュ */
+function flashInputError(msg) {
+  const input = document.getElementById('codeInput');
+  input.style.borderColor = 'var(--accent-red)';
+  input.style.boxShadow   = '0 0 10px rgba(255,77,109,0.4)';
+  input.placeholder       = msg;
+  setTimeout(() => {
+    input.style.borderColor = '';
+    input.style.boxShadow   = '';
+    input.placeholder       = '例: 7203';
+  }, 2000);
+}
+
+
+/* =============================================
+   カード DOM 操作
+   ============================================= */
+
+/** ページロード時に全カードを描画 */
+function renderAllCards() {
+  watchList.forEach(code => addCard(code));
+  updateEmptyState();
+  updateWatchCount();
+}
+
+/** カードをローディング状態で追加 */
+function addCard(code) {
+  updateEmptyState();
+  updateWatchCount();
+  const grid = document.getElementById('cardsGrid');
+  if (document.getElementById(`card-${code}`)) return; // 重複防止
+
+  const card = document.createElement('div');
+  card.className = 'stock-card';
+  card.id        = `card-${code}`;
+  card.innerHTML = buildCardHTML(code);
+  grid.insertBefore(card, document.getElementById('emptyState'));
+}
+
+/** カードの初期HTML */
+function buildCardHTML(code) {
+  return `
+    <div class="card-header">
+      <div>
+        <div class="card-code">${code}</div>
+        <div class="card-name" id="name-${code}">読み込み中...</div>
+      </div>
+      <div class="card-actions">
+        <span class="signal-badge badge-load" id="badge-${code}">
+          <span class="spinner"></span> 取得中
+        </span>
+        <button class="btn btn-danger" onclick="removeStock('${code}')" title="削除"
+          style="padding:5px 9px;font-size:12px;">✕</button>
+      </div>
+    </div>
+    <div class="card-price-row">
+      <span class="price-main"   id="price-${code}">---</span>
+      <span class="price-change neu" id="change-${code}">---</span>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-cell">
+        <div class="metric-label">MA5（短期）</div>
+        <div class="metric-value" id="ma5-${code}">---</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label">MA25（長期）</div>
+        <div class="metric-value" id="ma25-${code}">---</div>
+      </div>
+      <!-- RSI バー（50ラインが強シグナル判定境界） -->
+      <div class="rsi-bar-wrap">
+        <div class="rsi-bar-header">
+          <span class="rsi-bar-label">RSI（14）</span>
+          <span class="rsi-bar-value" id="rsi-${code}">---</span>
+        </div>
+        <div class="rsi-track">
+          <div class="rsi-fill" id="rsiFill-${code}" style="width:0%"></div>
+        </div>
+        <div class="rsi-hint">
+          <span>30 売られ過ぎ</span>
+          <span class="threshold">▲ 強GC判定ライン (50)</span>
+          <span>70 買われ過ぎ</span>
+        </div>
+      </div>
+      <!-- 出来高 -->
+      <div class="volume-cell">
+        <div class="volume-header">
+          <span class="volume-label">出来高</span>
+          <span class="volume-value" id="volume-${code}">---</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <span class="card-updated" id="updated-${code}">未取得</span>
+      <button class="btn btn-primary" onclick="fetchStockData('${code}')"
+        style="padding:5px 12px;font-size:11px;">🔄 個別更新</button>
+    </div>`;
+}
+
+
+/* =============================================
+   株価データ取得
+   ============================================= */
+
+/**
+ * Yahoo Finance v8 からデータ取得（CORS プロキシ経由）
+ * @param {string} code - 東証4桁コード
+ */
+async function fetchStockData(code) {
+  const ticker  = `${code}.T`;
+  const apiUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=60d&interval=1d`;
+  const proxyUrl= `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+
+  try {
+    const res  = await fetch(proxyUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+
+    const result = json?.chart?.result?.[0];
+    if (!result) throw new Error('データが見つかりません');
+
+    // null/undefined を取り除く（Safari は filter の挙動が若干厳格）
+    const closes  = (result.indicators.quote[0].close  || []).filter(function(v){ return v !== null && v !== undefined; });
+    const volumes = (result.indicators.quote[0].volume || []).filter(function(v){ return v !== null && v !== undefined; });
+    const meta    = result.meta;
+    const name    = meta.longName || meta.shortName || ticker;
+
+    if (closes.length < 26) throw new Error(`データ不足（${closes.length}日分）`);
+
+    // 指標計算（Safari対応: at()の代わりにインデックスアクセス）
+    const currentPrice = closes[closes.length - 1];
+    const prevPrice    = closes[closes.length - 2];
+    const change       = currentPrice - prevPrice;
+    const changePct    = (change / prevPrice) * 100;
+
+    const ma5today  = calcMA(closes, 5,  0); // 当日 MA5
+    const ma5prev   = calcMA(closes, 5,  1); // 前日 MA5
+    const ma25today = calcMA(closes, 25, 0); // 当日 MA25
+    const ma25prev  = calcMA(closes, 25, 1); // 前日 MA25
+
+    const rsi       = calcRSI(closes, 14);
+    const latestVol = volumes[volumes.length - 1];
+
+    // ★ シグナル判定（RSI≤50 で強シグナル）
+    const signal = detectSignal(ma5today, ma5prev, ma25today, ma25prev, rsi);
+
+    // カード反映
+    updateCard(code, { name, currentPrice, change, changePct,
+                       ma5today, ma25today, rsi, latestVol, signal });
+
+    // クロス発生時の通知
+    if (signal === 'strong-gc' || signal === 'gc') {
+      const isStrong = signal === 'strong-gc';
+      showAlert(code, isStrong, rsi);
+      sendLineNotify(code, isStrong, rsi, currentPrice, ma5today, ma25today);
+    }
+
+  } catch (err) {
+    console.error(`[${code}] エラー:`, err.message);
+    updateCardError(code, err.message);
+  }
+}
+
+
+/* =============================================
+   指標計算
+   ============================================= */
+
+/**
+ * 単純移動平均 (SMA) を計算する
+ * @param {number[]} prices - 終値配列（古い順）
+ * @param {number}   period - 期間
+ * @param {number}   offset - 0=当日, 1=前日
+ * @returns {number|null}
+ */
+function calcMA(prices, period, offset = 0) {
+  const end   = prices.length - 1 - offset;
+  const start = end - period + 1;
+  if (start < 0) return null;
+  const sum = prices.slice(start, end + 1).reduce((a, b) => a + b, 0);
+  return sum / period;
+}
+
+/**
+ * RSI（Wilder法）を計算する
+ * @param {number[]} prices - 終値配列（古い順）
+ * @param {number}   period - 通常14
+ * @returns {number|null} 0〜100
+ */
+function calcRSI(prices, period = 14) {
+  if (prices.length < period + 1) return null;
+
+  // 日次騰落を計算
+  const changes = prices.slice(1).map((p, i) => p - prices[i]);
+
+  // 初期平均（最初のperiod期間）
+  let avgGain = 0, avgLoss = 0;
+  for (let i = 0; i < period; i++) {
+    if (changes[i] > 0) avgGain += changes[i];
+    else                avgLoss += Math.abs(changes[i]);
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  // Wilder スムージング（以降の期間）
+  for (let i = period; i < changes.length; i++) {
+    const g = changes[i] > 0 ? changes[i] : 0;
+    const l = changes[i] < 0 ? Math.abs(changes[i]) : 0;
+    avgGain = (avgGain * (period - 1) + g) / period;
+    avgLoss = (avgLoss * (period - 1) + l) / period;
+  }
+
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return Math.round((100 - 100 / (1 + rs)) * 10) / 10;
+}
+
+
+/* =============================================
+   ★ シグナル判定ロジック（今回の核心）
+   ============================================= */
+
+/**
+ * クロスシグナルを判定する
+ *
+ * 【強ゴールデンクロス (strong-gc)】
+ *   条件: 前日MA5 ≤ MA25  かつ  当日MA5 > MA25  かつ  RSI ≤ 50
+ *   根拠: 売られ過ぎ圏（RSI≤50）で底打ちしてからのGCは、
+ *         過熱感がなく上値余地が大きい。精度の高いシグナル。
+ *
+ * 【通常ゴールデンクロス (gc)】
+ *   条件: 前日MA5 ≤ MA25  かつ  当日MA5 > MA25  かつ  RSI > 50
+ *   注意: クロスは発生しているが、高値圏でのGCは「だまし」になりやすい。
+ *
+ * 【デッドクロス (dc)】
+ *   条件: 前日MA5 ≥ MA25  かつ  当日MA5 < MA25
+ *
+ * 【上昇トレンド (up)】: MA5 > MA25（クロスなし）
+ * 【下降トレンド (down)】: MA5 ≤ MA25（クロスなし）
+ *
+ * @param {number|null} ma5now   - 当日 MA5
+ * @param {number|null} ma5prev  - 前日 MA5
+ * @param {number|null} ma25now  - 当日 MA25
+ * @param {number|null} ma25prev - 前日 MA25
+ * @param {number|null} rsi      - RSI(14)
+ * @returns {'strong-gc'|'gc'|'dc'|'up'|'down'}
+ */
+function detectSignal(ma5now, ma5prev, ma25now, ma25prev, rsi) {
+  // データ不足時はフォールバック
+  if (ma5now == null || ma5prev == null || ma25now == null || ma25prev == null) {
+    return 'down';
+  }
+
+  // ゴールデンクロス判定：前日 MA5 ≤ MA25 → 当日 MA5 > MA25
+  if (ma5prev <= ma25prev && ma5now > ma25now) {
+    // RSI ≤ 50 なら強シグナル、それ以外は通常GC
+    return (rsi !== null && rsi <= 50) ? 'strong-gc' : 'gc';
+  }
+
+  // デッドクロス判定：前日 MA5 ≥ MA25 → 当日 MA5 < MA25
+  if (ma5prev >= ma25prev && ma5now < ma25now) {
+    return 'dc';
+  }
+
+  // トレンド継続
+  return ma5now > ma25now ? 'up' : 'down';
+}
+
+
+/* =============================================
+   カード更新 DOM
+   ============================================= */
+
+/** 取得データをカードに反映 */
+function updateCard(code, d) {
+  const { name, currentPrice, change, changePct, ma5today, ma25today, rsi, latestVol, signal } = d;
+
+  // 銘柄名
+  setText(`name-${code}`, name);
+
+  // 現在値
+  setText(`price-${code}`, `¥${fmt(currentPrice)}`);
+
+  // 前日比
+  const sign = change >= 0 ? '+' : '';
+  const cls  = change > 0 ? 'pos' : change < 0 ? 'neg' : 'neu';
+  const chEl = document.getElementById(`change-${code}`);
+  if (chEl) {
+    chEl.textContent = `${sign}${fmt(change)} (${sign}${changePct.toFixed(2)}%)`;
+    chEl.className   = `price-change ${cls}`;
+  }
+
+  // MA
+  setText(`ma5-${code}`,  `¥${fmt(ma5today)}`);
+  setText(`ma25-${code}`, `¥${fmt(ma25today)}`);
+
+  // RSI 値 + バー
+  if (rsi !== null) {
+    const rsiEl   = document.getElementById(`rsi-${code}`);
+    const rsiFill = document.getElementById(`rsiFill-${code}`);
+    if (rsiEl) {
+      rsiEl.textContent = rsi.toFixed(1);
+      // ★ RSI≤50 は金色で強調（強シグナル圏を視覚化）
+      rsiEl.style.color = rsi <= 30 ? 'var(--accent-green)'
+                        : rsi >= 70 ? 'var(--accent-red)'
+                        : rsi <= 50 ? 'var(--accent-gold)'
+                        :             'var(--accent-blue)';
+    }
+    if (rsiFill) {
+      rsiFill.style.width      = `${Math.min(rsi, 100)}%`;
+      rsiFill.style.background = rsi <= 30 ? 'var(--accent-green)'
+                               : rsi >= 70 ? 'var(--accent-red)'
+                               : rsi <= 50 ? 'linear-gradient(90deg,var(--accent-gold),var(--accent-orange))'
+                               :             'var(--accent-blue)';
+    }
+  }
+
+  // 出来高
+  setText(`volume-${code}`, fmtVolume(latestVol));
+
+  // シグナルバッジ
+  const badgeEl = document.getElementById(`badge-${code}`);
+  if (badgeEl) {
+    const b = getBadgeInfo(signal);
+    badgeEl.className = `signal-badge ${b.cls}`;
+    badgeEl.textContent = b.label;
+  }
+
+  // カード枠線・グロー
+  const cardEl = document.getElementById(`card-${code}`);
+  if (cardEl) cardEl.className = `stock-card ${signal}`;
+
+  // 更新時刻
+  setText(`updated-${code}`, `更新: ${nowStr()}`);
+}
+
+/** シグナルごとのバッジ情報 */
+function getBadgeInfo(signal) {
+  const map = {
+    'strong-gc': { cls: 'badge-strong-gc', label: '🔥 強GC（RSI≤50）' },
+    'gc':        { cls: 'badge-gc',        label: '✨ ゴールデンクロス'  },
+    'dc':        { cls: 'badge-dc',        label: '💀 デッドクロス'     },
+    'up':        { cls: 'badge-up',        label: '↑ 上昇トレンド'      },
+    'down':      { cls: 'badge-down',      label: '↓ 下降トレンド'      },
+  };
+  return map[signal] || map['down'];
+}
+
+/** エラー時のカード更新 */
+function updateCardError(code, msg) {
+  const b = document.getElementById(`badge-${code}`);
+  if (b) { b.className = 'signal-badge badge-err'; b.textContent = '⚠ 取得失敗'; }
+  setText(`name-${code}`,    `エラー: ${msg}`);
+  setText(`updated-${code}`, `失敗: ${nowStr()}`);
+}
+
+/** テキスト安全セット */
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+
+/* =============================================
+   一括更新
+   ============================================= */
+async function refreshAll() {
+  const btn  = document.getElementById('refreshBtn');
+  const icon = document.getElementById('refreshIcon');
+  btn.disabled    = true;
+  icon.textContent= '⏳';
+  await Promise.allSettled(watchList.map(c => fetchStockData(c)));
+  btn.disabled    = false;
+  icon.textContent= '🔄';
+  timerRemaining  = AUTO_REFRESH_SEC; // リセット
+}
+
+
+/* =============================================
+   自動更新カウントダウン
+   ============================================= */
+function startCountdown() {
+  countdownTimer = setInterval(() => {
+    timerRemaining--;
+    const m = String(Math.floor(timerRemaining / 60)).padStart(2, '0');
+    const s = String(timerRemaining % 60).padStart(2, '0');
+    const el = document.getElementById('timerDisplay');
+    if (el) el.textContent = `${m}:${s}`;
+    if (timerRemaining <= 0) {
+      timerRemaining = AUTO_REFRESH_SEC;
+      refreshAll();
+    }
+  }, 1000);
+}
+
+
+/* =============================================
+   アラートバナー
+   ============================================= */
+
+/**
+ * 画面下部にシグナルアラートを表示する
+ * @param {string}  code     - 銘柄コード
+ * @param {boolean} isStrong - 強シグナルか通常GCか
+ * @param {number}  rsi      - RSI値
+ */
+function showAlert(code, isStrong, rsi) {
+  const banner = document.getElementById('alertBanner');
+  const title  = document.getElementById('alertTitle');
+  const body   = document.getElementById('alertBody');
+
+  if (isStrong) {
+    // 強シグナル（RSI≤50）
+    title.textContent = `🔥 強シグナル検知！ ${code}`;
+    body.textContent  = `ゴールデンクロス + RSI ${rsi}（≤50）。売られ過ぎ圏からの反転上昇の可能性あり。`;
+  } else {
+    // 通常ゴールデンクロス
+    title.textContent = `✨ ゴールデンクロス検知！ ${code}`;
+    body.textContent  = `MA5がMA25を上抜け。RSI ${rsi}（>50 = 過熱圏注意）`;
+  }
+
+  banner.classList.add('active');
+  if (alertTimeout) clearTimeout(alertTimeout);
+  alertTimeout = setTimeout(closeAlert, 9000); // 9秒で自動消去
+}
+
+function closeAlert() {
+  document.getElementById('alertBanner').classList.remove('active');
+}
+
+
+/* =============================================
+   LINE Notify 通知
+   ============================================= */
+
+/**
+ * LINE Notify にシグナルメッセージを送信する
+ * 注意: CORS制限のためブラウザから直接はブロックされることがあります。
+ *       実運用時は Google Apps Script などのサーバーサイドProxy を経由してください。
+ */
+async function sendLineNotify(code, isStrong, rsi, price, ma5, ma25) {
+  const url = document.getElementById('lineWebhookUrl').value.trim();
+  if (!url) return; // URL未設定は何もしない
+
+  const emoji = isStrong ? '🔥' : '✨';
+  const label = isStrong ? '【強シグナル GC+RSI≤50】' : '【ゴールデンクロス検知】';
+  const msg   = `\n${emoji}${label}\n銘柄: ${code}.T\nRSI: ${rsi}\n価格: ¥${fmt(price)}\nMA5: ¥${fmt(ma5)} / MA25: ¥${fmt(ma25)}`;
+
+  try {
+    await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    `message=${encodeURIComponent(msg)}`
+    });
+  } catch (e) {
+    console.warn('[LINE] 送信失敗（CORS制限の可能性）:', e.message);
+  }
+}
+
+async function testLineNotify() {
+  const url = document.getElementById('lineWebhookUrl').value.trim();
+  if (!url) { alert('Webhook URL を入力してください'); return; }
+  localStorage.setItem('lineWebhookUrl', url);
+  lineWebhookUrl = url;
+  await sendLineNotify('TEST', true, 42, 2500, 2480, 2510);
+  alert('テスト送信しました（CORS制限でブラウザから直接は失敗することがあります）');
+}
+
+
+/* =============================================
+   ユーティリティ
+   ============================================= */
+
+/** 数値を3桁区切りにフォーマット */
+function fmt(n) {
+  if (n == null || isNaN(n)) return '---';
+  return Number(n).toLocaleString('ja-JP', { maximumFractionDigits: 1 });
+}
+
+/** 出来高を万・億単位でフォーマット */
+function fmtVolume(v) {
+  if (v == null || isNaN(v)) return '---';
+  if (v >= 100000000) return (v / 100000000).toFixed(2) + ' 億株';
+  if (v >= 10000)     return Math.round(v / 10000).toLocaleString() + ' 万株';
+  return v.toLocaleString() + ' 株';
+}
+
+/** 現在時刻 HH:MM:SS */
+function nowStr() {
+  return new Date().toLocaleTimeString('ja-JP');
+}
+</script>
+
+</body>
+</html>
